@@ -370,7 +370,7 @@
     (let [results
           {:benefits2-1  benefits2-1
            :annual-benefits (map-of-vs->v-of-maps benefits2-1)
-           :old-form     (mapv (fn [tm]
+           #_#_:old-form     (mapv (fn [tm]
                                  (let [surg (nth surg-only tm)]
                                    {:cumOverallSurOL    surg ;(- 1 pr-all-time-0)
                                     :surg               surg
