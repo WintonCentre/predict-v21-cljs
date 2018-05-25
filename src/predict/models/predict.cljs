@@ -1,17 +1,10 @@
 (ns predict.models.predict
   "A cljs version of the predict model, enhanced with radiotherapy and bisphosphonates, and extended to 15 years."
   (:require [cljs.pprint :refer [pprint pp]]
-            [predict.models.data-frame :refer [cell-apply cell-update cell-binary cell-binary-seq cell-sums cell-diffs]]))
+            [winton-utils.data-frame :refer [cell-apply cell-update cell-binary cell-binary-seq cell-sums cell-diffs map-of-vs->v-of-maps]]))
 
 
-(defn map-of-vs->v-of-maps
-      "Transpose a map of vectors to a vector of maps.
-      Resulting vector will be truncated to the length of the shortest input vector.
-      e.g. {:a [0 1 2] :b [10 11 12]} -> [{:a 0 :b 10} {:a 1 :b 11} {:a 2 :b 12}]"
-      [k-vs]
-      (mapv (fn [vs]
-                (into {} (map-indexed (fn [k v] [(nth (keys k-vs) k) v]) vs)))
-            (apply map vector (vals k-vs))))
+
 
 (def exp js/Math.exp)
 (def ln js/Math.log)
