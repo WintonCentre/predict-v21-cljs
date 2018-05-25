@@ -1,7 +1,7 @@
 (ns predict.models.predict
   "A cljs version of the predict model, enhanced with radiotherapy and bisphosphonates, and extended to 15 years."
   (:require [cljs.pprint :refer [pprint pp]]
-            [predict.models.data-frame :refer [cell-apply cell-update cell-sums cell-diffs]]))
+            [predict.models.data-frame :refer [cell-apply cell-update cell-binary cell-binary-seq cell-sums cell-diffs]]))
 
 
 (defn map-of-vs->v-of-maps
@@ -22,6 +22,13 @@
   "Calculate deltas of a seq, inserting start as the first value to compare"
   (into [] (map (fn [[a b]] (- b a)) (partition 2 1 (cons start v)))))
 
+(comment
+  (deltas 0 [1 2 4 8])
+  ;=> [1 1 2 4]
+
+  (deltas 1 [1 2 4 8]))
+;=> [0 1 2 4]
+
 
 (defn rec-age-10-sq
   "1/(age/10)^2"
@@ -32,6 +39,13 @@
   "log(age/10)"
   [age]
   (ln (/ age 10)))
+
+(comment
+  (rec-age-10-sq 25)
+  ; => 0.16
+  (log-age-10 25))
+; => 0.9162907318741551
+
 
 (defn r-base-br
   "R: r.base.br
@@ -61,12 +75,12 @@
   "Calculate the breast cancer mortality prognostic index (pi).
   Comments relate this code to the corresponding R variables."
   [{:keys [age size nodes grade erstat detection her2-rh ki67-rh grade-a radio? bis?]
-    :or   {age 65 size 19 nodes 1 grade 1 erstat 1 detection 0 her2-rh -0.0762 ki67-rh -0.1133 grade-a 0 radio? true bis? true}}]
+    :or   {age 65 size 19 nodes 1 grade 1 erstat 1 detection 0 her2-rh -0.0762 ki67-rh -0.11333 grade-a 0 radio? true bis? true}}]
 
 
   (+
     her2-rh                                                 ; -0.0762 (ok)
-    ki67-rh                                                 ; -0.1133 (ok)
+    ki67-rh                                                 ; -0.11333 (ok)
     (r-base-br radio?)                                      ; adjust baseline for radiotherapy (r.base.br)
     (if (pos? erstat)
       (+
@@ -90,9 +104,24 @@
         (* 0.6260541 (+ (ln (/ (inc nodes) 10)) 1.086916249)) ; nodes.beta * nodes.mfp (er==0)
         (* 1.129091 grade-a)))))                            ; grade.beta * grade.val (er==0)
 
+(comment
+  (prognostic-index {})
+  ; => 0.36767712302758926
+  (prognostic-index {:age 25 :size 1 :nodes 1 :grade 1 :detection 0 :her2_rh 0 :ki67_rh 0 :erstat 1 :radio? true}))
+; => -0.4509327543042764
+
+
+
 (defn m-oth-prognostic-index [age radio?]
   "Calculate the other mortality prognostic index"
   (+ (* 0.0698252 (+ (pow (/ age 10) 2) -34.23391957)) (r-base-oth radio?)))
+
+(comment
+  (m-oth-prognostic-index 65 false)
+  ;=> 0.5597244192408362
+  (m-oth-prognostic-index 65 true))
+;=> 0.5127244192408361
+
 
 (defn base-m-cum-br
   "baseline survival. Actually baseline-mortality! R: base.m.cum.br"
@@ -136,6 +165,18 @@
       0 -0.11333                                            ;ki67.beta (er==1 && not ki67)
       0)                                                    ;ki67.beta (all other cases)
     0))
+
+(comment
+  (grade-a 2)
+  ; => 1
+
+  (her2-rh 1)
+  ; 0.2413
+
+  (ki67-rh 1 1))
+;0.14904
+
+
 
 (defn types-rx
   "Calculate treatment coefficients
@@ -288,11 +329,12 @@
 
                            types)
 
-        m-oth-rx (into {}
-                       (comp
-                         (map (cell-apply #(- 1 %)))        ; -> m-cum-oth-rx (state 1) R 146
-                         (map (cell-diffs 0)))              ; -> m-oth-rx               R 148
-                       s-cum-oth-rx)
+
+        #_#_m-oth-rx (into {}
+                           (comp
+                             (map (cell-apply #(- 1 %)))    ; -> m-cum-oth-rx (state 1) R 146
+                             (map (cell-diffs 0)))          ; -> m-oth-rx               R 148
+                           s-cum-oth-rx)
 
         ;------
         ; Generate annual baseline breast mortality
@@ -317,23 +359,61 @@
                         (map (cell-diffs 0)))               ; -> m-br-rx      R 187
                       s-cum-br-rx)
 
-        ; Cumulative all cause mortality conditional on surviving breast and all cause mortality
-        m-cum-all-rx (into {}                               ; R 194
-                           (map (cell-update (fn [type tm old] (- 1 (* old (nth (s-cum-br-rx type) tm))))))
-                           s-cum-oth-rx)
+        #_(comment
+            ; Generate the annual breast cancer specific mortality rate
+            ; R 171
+            m-br-rx (->> types-rx                           ;m.br.rx (ok - state 1)
+                         (map (fn [[type rx]]
+                                [type (map #(* (exp (+ rx pi)) %) base-m-br)]))
+                         (into {}))
 
+            ; Calculate the cumulative breast cancer mortality rate
+            ; R 178
+            m-cum-br-rx (->> types                          ;m.cum.br.x (ok - state 1!)
+                             (map (fn [type]
+                                    [type (reductions + (m-br-rx type))]))
+                             (into {}))
+
+
+
+            ; Calculate the cumulative breast cancer survival
+            ; R 181
+            s-cum-br-rx (->> types                          ;s.cum.br.rx (~ ok)
+                             (map (fn [type]
+                                    [type (map #(exp (- %)) (m-cum-br-rx type))]))
+                             (into {}))
+
+            ; Convert cumulative mortality rate into cumulative risk
+            ; R 184
+            m-cum-br-rx (->> types                          ;m.cum.br.rx (~ ok state 2)
+                             (map (fn [type]
+                                    [type (map #(- 1 %) (s-cum-br-rx type))]))
+                             (into {}))
+
+            ; R 187
+            m-br-rx (->> types                              ;m.br.rx (~ ok state 2)
+                         (map (fn [type] [type (deltas 0 (m-cum-br-rx type))]))
+                         (into {})))
+
+
+        ; Cumulative all cause mortality conditional on surviving breast and all cause mortality
+        ; R 194
         m-all-rx (into {}
                        (comp
+                         (map (cell-binary #(- 1 (* %1 %2)) s-cum-br-rx))
+                         ;(map (cell-update (fn [type tm old] (- 1 (* old (nth (s-cum-br-rx type) tm))))))
                          (map (cell-diffs 0)))
-                       m-cum-all-rx)
-
+                       s-cum-oth-rx)
         ;---------
         ; Proportion of all cause mortality that is breast cancer
 
         pred-m-br-rx (into {}
                            (comp
+                             ; do not replace the following call with cell-binary without special casing tm == 0
                              (map (cell-update (fn [type tm old] (if (> tm 0) (/ old (+ old (nth m-oth tm))) 0)))) ; prop-br-rx R 200
-                             (map (cell-update (fn [type tm old] (* old (nth (type m-all-rx) tm))))))
+                             (map (cell-binary * m-all-rx))
+                             ;(map (cell-update (fn [type tm old] (* old (nth (type m-all-rx) tm)))))
+                             )
                            m-br-rx)
 
         pred-cum-br-rx (into {}
@@ -346,18 +426,21 @@
                                     (map cell-sums))
                                   m-all-rx)
 
-        ;todo: optimise this
         pred-cum-all-rx (into {}
                               (comp
-                                (map (cell-update (fn [type tm old] (- old (nth (type pred-m-br-rx) tm))))) ;pred-m-oth-rx R 203
+                                (map (cell-binary #(- %2 %1) pred-m-br-rx)) ;pred-m-oth-rx R 203
+                                ;(map (cell-update (fn [type tm old] (- old (nth (type pred-m-br-rx) tm))))) ;pred-m-oth-rx R 203
                                 (map cell-sums)             ; pred-cum-oth-rx R204
-                                (map (cell-update (fn [type tm old] (+ old (nth (type pred-cum-br-rx) tm)))))) ; pred-cum-all-rx R 205
+                                (map (cell-binary + pred-cum-br-rx))
+                                ;(map (cell-update (fn [type tm old] (+ old (nth (type pred-cum-br-rx) tm)))))
+                                )                           ; pred-cum-all-rx R 205
                               m-all-rx)
 
         surg-only (map #(- 1 %) (:z pred-cum-all-rx))
 
         benefits2-1 (assoc (into {}
-                                 (map (cell-update (fn [type tm old] (- (nth (:z pred-cum-all-rx) tm) old))))
+                                 (map (cell-binary-seq - (:z pred-cum-all-rx)))
+                                 ;(map (cell-update (fn [type tm old] (- (nth (:z pred-cum-all-rx) tm) old))))
                                  pred-cum-all-rx)
                       :z surg-only
                       :oth (:z s-cum-oth-rx))
@@ -366,26 +449,9 @@
     ; return
     ;   benefits2-1 - a map of vectors of benefits by year
     ;   annual-benefits a vector by year of benefit maps
-    ;   the old-form returned by js 2.0 code.
-    (let [results
-          {:benefits2-1  benefits2-1
-           :annual-benefits (map-of-vs->v-of-maps benefits2-1)
-           #_#_:old-form     (mapv (fn [tm]
-                                 (let [surg (nth surg-only tm)]
-                                   {:cumOverallSurOL    surg ;(- 1 pr-all-time-0)
-                                    :surg               surg
-                                    :cumOverallSurHormo (nth (:h benefits2-1) tm)
-                                    :cumOverallSurChemo (nth (:c benefits2-1) tm)
-                                    :cumOverallSurCandH (nth (:hrc benefits2-1) tm)
-                                    :cumOverallSurCHT   (nth (:hrct benefits2-1) tm)
-                                    :marginSurHormo     [(nth (:h-low benefits2-1) tm) (nth (:h-high benefits2-1) tm)]
-                                    :marginSurChemo     [(nth (:c-low benefits2-1) tm) (nth (:c-high benefits2-1) tm)]
-                                    :marginSurCandH     [(nth (:hrc-low benefits2-1) tm) (nth (:hrc-high benefits2-1) tm)]
-                                    :marginSurCHT       [(nth (:hrct-low benefits2-1) tm) (nth (:hrct-high benefits2-1) tm)]
-                                    :oth                (- 1 (nth (:z s-cum-oth-rx) tm))}))
-                               times)}]
 
-      results)))
+    {:benefits2-1     benefits2-1
+     :annual-benefits (map-of-vs->v-of-maps benefits2-1)}))
 
 
 

@@ -56,11 +56,22 @@
   ;=> {:a (-1 1 1 1), :b (0 5 -1 -1), :c (2 0 0 1), :d (-1 -1 -1)}
   )
 
-(defn cell-binary [f]
-  (fn [[[k1 vs1] [k2 vs2]]] [k1 (map f vs1 vs2)]))
+(defn cell-binary
+  "Apply a binary function to merge cells from the input dataframe with cells from df"
+  [f df]
+  (fn [[k vs]] [k (map f (k df) vs)]))
+
+
+(defn cell-binary-seq
+  "Apply a binary function to merge cells from the input dataframe with cells from a seq"
+  [f cs]
+  (fn [[k vs]] [k (map f cs vs)]))
 
 (comment
-  (into {} (map (cell-binary +)) [[[:a (range 10)] [:b (range 5 15)]] [[:a (range 5 15)] [:b (range 10)]]])
+  (into {}
+        (map (cell-binary + {:a (range 10 20) :b (range 10)}))
+        {:a (range -10 -20 -1) :b (range 0 -10 -1)})
+  ; => {:a (0 0 0 0 0 0 0 0 0 0), :b (0 0 0 0 0 0 0 0 0 0)}
   )
 
 
