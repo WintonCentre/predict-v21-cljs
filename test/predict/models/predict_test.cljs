@@ -5,6 +5,7 @@
                                             r-base-br r-br r-base-oth r-oth detection grade-a her2-rh ki67-rh
                                             prognostic-index m-oth-prognostic-index
                                             base-m-cum-br age
+                                            types-rx
                                             ]]))
 
 (def default-epsilon "default float tolerance" 1e-8)
@@ -48,7 +49,7 @@
 
 (deftest prognostic-index-test
   (is (approx= 0.5006471230275893 (prognostic-index {})))
-  (is (=  -0.5074627543042763 (prognostic-index {:age 25 :size 1 :nodes 1 :grade 1 :detection 0 :her2_rh 0 :ki67_rh 0 :erstat 1 :radio? true})))
+  (is (= -0.5074627543042763 (prognostic-index {:age 25 :size 1 :nodes 1 :grade 1 :detection 0 :her2_rh 0 :ki67_rh 0 :erstat 1 :radio? true})))
   (is (approx= -0.36397949827304354 (prognostic-index {:age 90 :size 10 :nodes 2 :grade 2 :detection 0 :her2_rh 0 :ki67_rh 0 :erstat 0 :radio? false})))
   (is (approx= -0.8680964143042763 (prognostic-index {:age 25 :size 1 :nodes 1 :grade 1 :detection 1 :her2_rh 1 :ki67_rh 1 :erstat 1 :radio? false}))))
 
@@ -69,3 +70,64 @@
   (testing "age-clamp"
     (is (= 25 (age 16))))
   )
+
+(deftest types-rx-test
+  (testing "types-rx"
+    (is (= {:r-low      0,
+            :h-high     0,
+            :r          0,
+            :hr         0,
+            :b-high     0,
+            :hrc-high   -0.579,
+            :hrct       -0.446,
+            :hrctb-high -0.446,
+            :h-low      0,
+            :hrc-low    -0.313,
+            :c-low      -0.313,
+            :hrct-low   -0.446,
+            :hr-low     0,
+            :hrc        -0.446,
+            :hrctb-low  -0.446,
+            :z          0,
+            :c          -0.446,
+            :hrct-high  -0.446,
+            :hrctb      -0.446,
+            :h          0,
+            :t-high     0,
+            :b          0,
+            :c-high     -0.579,
+            :t          0,
+            :hr-high    0,
+            :b-low      0,
+            :t-low      0,
+            :r-high     0}
+           (types-rx {:erstat 0 :her2 0 :horm 0 :chemoGen 3 :radio? false :bis? false :bis 1 :tra 1})))
+    (is (= {:r-low      0,
+            :h-high     -0.502,
+            :r          0,
+            :hr         -0.3857,
+            :b-high     -0.32,
+            :hrc-high   -0.9646999999999999,
+            :hrct       -1.1884000000000001,
+            :hrctb-high -1.5084000000000002,
+            :h-low      -0.212,
+            :hrc-low    -0.6987,
+            :c-low      -0.313,
+            :hrct-low   -1.0707,
+            :hr-low     -0.3857,
+            :hrc        -0.8317,
+            :hrctb-low  -1.2584000000000002,
+            :z          0,
+            :c          -0.446,
+            :hrct-high  -1.3647,
+            :hrctb      -1.3864,
+            :h          -0.3857,
+            :t-high     -0.533,
+            :b          -0.198,
+            :c-high     -0.579,
+            :t          -0.3567,
+            :hr-high    -0.3857,
+            :b-low      -0.07,
+            :t-low      -0.239,
+            :r-high     0}
+           (types-rx {:erstat 1 :her2 1 :horm 1 :chemoGen 3 :radio? false :bis? true :bis 1 :tra 0})))))

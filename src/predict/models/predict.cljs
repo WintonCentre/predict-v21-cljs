@@ -129,18 +129,6 @@
       0)                                                    ;ki67.beta (all other cases)
     0))
 
-(comment
-  (grade-a 2)
-  ; => 1
-
-  (her2-rh 1)
-  ; 0.2413
-
-  (ki67-rh 1 1))
-;0.14904
-
-
-
 (defn types-rx
   "Calculate treatment coefficients
   radio indicates radiotherapy is available in the interface and selected
