@@ -433,6 +433,7 @@
 
   [{:keys [age size nodes grade erstat detection her2 ki67 rtime radio? bis? chemoGen horm radio bis tra
            delay]
+    :or   {delay 5}
     :as   inputs}]
 
   (let [age (if (< age 25) 25 age)
@@ -443,6 +444,8 @@
         her2-rh (her2-rh her2)
         ki67-rh (ki67-rh erstat ki67)
         chemo (pos? chemoGen)
+
+        _ (println "delay" delay)
 
         types-rx (types-rx inputs)
         types (map first types-rx)
