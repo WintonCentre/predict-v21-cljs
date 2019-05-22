@@ -8,7 +8,7 @@
                  [winton-utils "0.2.0"]]
   :profiles {:kaocha {:dependencies [[lambdaisland/kaocha "0.0-418"]
                                      [lambdaisland/kaocha-cljs "0.0-32"]
-                                     ;[lambdaisland/kaocha-cloverage "0.0-32"]
-                                     ]}}
+                                     ]
+                      :source-paths ["src"]}}
   :aliases {"kaocha" ["with-profile" "+kaocha" "run" "-m" "kaocha.runner"]}
   )
