@@ -6,7 +6,7 @@
                                             prognostic-index m-oth-prognostic-index
                                             base-m-cum-br age
                                             types-rx
-                                            cljs-predict cljs-predict-h10
+                                            cljs-predict
                                             ]]))
 
 (def default-epsilon "default float tolerance" 1e-8)
@@ -102,111 +102,136 @@
             :b-low      0,
             :t-low      0,
             :r-high     0}
-           (types-rx {:erstat 0 :her2 0 :horm 0 :chemoGen 3 :radio? false :bis? false :bis 1 :tra 1})))
-    (is (= {:r-low      0,
-            :h-high     -0.502,
-            :r          0,
-            :hr         -0.3857,
-            :b-high     -0.32,
-            :hrc-high   -0.9646999999999999,
-            :hrct       -1.1884000000000001,
-            :hrctb-high -1.5084000000000002,
-            :h-low      -0.212,
-            :hrc-low    -0.6987,
-            :c-low      -0.313,
-            :hrct-low   -1.0707,
-            :hr-low     -0.3857,
-            :hrc        -0.8317,
-            :hrctb-low  -1.2584000000000002,
-            :z          0,
-            :c          -0.446,
-            :hrct-high  -1.3647,
-            :hrctb      -1.3864,
-            :h          -0.3857,
-            :t-high     -0.533,
-            :b          -0.198,
-            :c-high     -0.579,
-            :t          -0.3567,
-            :hr-high    -0.3857,
-            :b-low      -0.07,
-            :t-low      -0.239,
-            :r-high     0}
-           (types-rx {:erstat 1 :her2 1 :horm 1 :chemoGen 3 :radio? false :bis? true :bis 1 :tra 0})))))
+           (types-rx {:erstat 0 :her2 0 :horm :h5 :chemoGen 3 :radio? false :bis? false :bis 1 :tra 1} 0)) "0 :h5 0")
 
-(deftest cljs-predict-test
-  (testing "v2.1 model"
-    (is (= '(0
-              0.0014235998353466783
-              0.005289672012324664
-              0.010759822493926374
-              0.017200767587482346
-              0.024213922849740006
-              0.0315433093601687
-              0.0390198769320368
-              0.046529416795973236
-              0.05399349285357215
-              0.06135767218134225
-              0.0685840054034158
-              0.07564607730104955
-              0.08252566579852982
-              0.08921043783391924
-              0.09569233116719345)
+    (is (= {:r-low 0, :h-high -0.502, :r 0, :hr -0.3857, :b-high -0.32, :hrc-high -0.9646999999999999, :hrct -1.1884000000000001, :hrctb-high -1.5084000000000002, :h-low -0.212, :hrc-low -0.6987, :c-low -0.313, :hrct-low -1.0707, :hr-low -0.3857, :hrc -0.8317, :hrctb-low -1.2584000000000002, :z 0, :c -0.446, :hrct-high -1.3647, :hrctb -1.3864, :h -0.3857, :t-high -0.533, :b -0.198, :c-high -0.579, :t -0.3567, :hr-high -0.3857, :b-low -0.07, :t-low -0.239, :r-high 0}
+           (types-rx {:erstat 1 :her2 1 :horm :h5 :chemoGen 3 :radio? false :bis? true :bis 1 :tra 0}
+                     0)) "1 :h5 0")
 
-           (:hrctb (:benefits2-1 (cljs-predict
-                                   {:age       25
-                                    :size      2
-                                    :nodes     2
-                                    :grade     1
-                                    :erstat    1
-                                    :detection 1
-                                    :her2      1
-                                    :ki67      1
-                                    :rtime     15
-                                    :chemoGen  3
-                                    :bis?      true
-                                    :bis       1
-                                    :radio?    false
-                                    :radio     0
-                                    :horm      1
-                                    :tra       1
-                                    }))))))
-  )
+    (is (= {:r-low 0, :h-high -0.502, :r 0, :hr -0.3857, :b-high -0.32, :hrc-high -0.9646999999999999, :hrct -1.1884000000000001, :hrctb-high -1.5084000000000002, :h-low -0.212, :hrc-low -0.6987, :c-low -0.313, :hrct-low -1.0707, :hr-low -0.3857, :hrc -0.8317, :hrctb-low -1.2584000000000002, :z 0, :c -0.446, :hrct-high -1.3647, :hrctb -1.3864, :h -0.3857, :t-high -0.533, :b -0.198, :c-high -0.579, :t -0.3567, :hr-high -0.3857, :b-low -0.07, :t-low -0.239, :r-high 0}
+           (types-rx {:erstat 1 :her2 1 :horm :h5 :chemoGen 3 :radio? false :bis? true :bis 1 :tra 0}
+                     11)) "1 :h5 11")
 
-(deftest cljs-predict-h10-test
-  (testing "h10 model"
-    (is (= '(0
-              0.0014235998353466783
-              0.005289672012324664
-              0.010759822493926374
-              0.017200767587482346
-              0.024213922849740006
-              0.0315433093601687
-              0.0390198769320368
-              0.046529416795973236
-              0.05399349285357215
-              0.06135767218134225
-              0.0685840054034158
-              0.07564607730104955
-              0.08252566579852982
-              0.08921043783391924
-              0.09569233116719345)
+    (is (= {:r-low 0, :h-high -0.702, :r 0, :hr -0.5857, :b-high -0.32, :hrc-high -1.1646999999999998, :hrct -1.3884, :hrctb-high -1.7084000000000001, :h-low -0.41200000000000003, :hrc-low -0.8987, :c-low -0.313, :hrct-low -1.2707000000000002, :hr-low -0.5857, :hrc -1.0317, :hrctb-low -1.4584000000000001, :z 0, :c -0.446, :hrct-high -1.5647000000000002, :hrctb -1.5864, :h -0.5857, :t-high -0.533, :b -0.198, :c-high -0.579, :t -0.3567, :hr-high -0.5857, :b-low -0.07, :t-low -0.239, :r-high 0}
+           (types-rx {:erstat 1 :her2 1 :horm :h10 :chemoGen 3 :radio? false :bis? true :bis 1 :tra 0}
+                     11)) "1 :h10 11")
 
-           (:hrctb (:benefits2-1 (cljs-predict
-                                   {:age       25
-                                    :size      2
-                                    :nodes     2
-                                    :grade     1
-                                    :erstat    1
-                                    :detection 1
-                                    :her2      1
-                                    :ki67      1
-                                    :rtime     15
-                                    :chemoGen  3
-                                    :bis?      true
-                                    :bis       1
-                                    :radio?    false
-                                    :radio     0
-                                    :horm      1
-                                    :tra       1
-                                    }))))))
-  )
+    ))
+
+#_(deftest cljs-predict-test
+    (testing "v2.1 model"
+      (is (= '(0
+                0.0014235998353466783
+                0.005289672012324664
+                0.010759822493926374
+                0.017200767587482346
+                0.024213922849740006
+                0.0315433093601687
+                0.0390198769320368
+                0.046529416795973236
+                0.05399349285357215
+                0.06135767218134225
+                0.0685840054034158
+                0.07564607730104955
+                0.08252566579852982
+                0.08921043783391924
+                0.09569233116719345)
+
+             (:hrctb (:benefits2-1 (cljs-predict
+                                     {:age       25
+                                      :size      2
+                                      :nodes     2
+                                      :grade     1
+                                      :erstat    1
+                                      :detection 1
+                                      :her2      1
+                                      :ki67      1
+                                      :rtime     15
+                                      :chemoGen  3
+                                      :bis?      true
+                                      :bis       1
+                                      :radio?    false
+                                      :radio     0
+                                      :horm      :yes
+                                      :tra       1
+                                      }))))))
+    )
+
+#_(deftest cljs-predict-h5-test
+    (testing "h10 model"
+      (is (= '(0
+                0.0014235998353466783
+                0.005289672012324664
+                0.010759822493926374
+                0.017200767587482346
+                0.024213922849740006
+                0.0315433093601687
+                0.0390198769320368
+                0.046529416795973236
+                0.05399349285357215
+                0.06135767218134225
+                0.0685840054034158
+                0.07564607730104955
+                0.08252566579852982
+                0.08921043783391924
+                0.09569233116719345)
+
+             (:hrctb (:benefits2-1 (cljs-predict
+                                     {:age       25
+                                      :size      2
+                                      :nodes     2
+                                      :grade     1
+                                      :erstat    1
+                                      :detection 1
+                                      :her2      1
+                                      :ki67      1
+                                      :rtime     15
+                                      :chemoGen  3
+                                      :bis?      true
+                                      :bis       1
+                                      :radio?    false
+                                      :radio     0
+                                      :horm      :h5
+                                      :tra       1
+                                      }))))))
+    )
+
+
+#_(deftest cljs-predict-h10-test
+    (testing "h10 model"
+      (is (= '(0
+                0.0014235998353466783
+                0.005289672012324664
+                0.010759822493926374
+                0.017200767587482346
+                0.024213922849740006
+                0.0315433093601687
+                0.0390198769320368
+                0.046529416795973236
+                0.05399349285357215
+                0.06135767218134225
+                0.0685840054034158
+                0.07564607730104955
+                0.08252566579852982
+                0.08921043783391924
+                0.09569233116719345)
+
+             (:hrctb (:benefits2-1 (cljs-predict
+                                     {:age       25
+                                      :size      2
+                                      :nodes     2
+                                      :grade     1
+                                      :erstat    1
+                                      :detection 1
+                                      :her2      1
+                                      :ki67      1
+                                      :rtime     15
+                                      :chemoGen  3
+                                      :bis?      true
+                                      :bis       1
+                                      :radio?    false
+                                      :radio     0
+                                      :horm      true
+                                      :tra       1
+                                      }))))))
+    )

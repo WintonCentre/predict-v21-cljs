@@ -12,6 +12,7 @@
                                      [lambdaisland/kaocha-cljs "0.0-32"]
                                      ]
                       :source-paths ["src"]}}
+  :clean-targets ^{:protect false} [target]
   :resource-paths ["target" "resources"]
   :aliases {"fig"       ["trampoline" "run" "-m" "figwheel.main"]
             "build-dev" ["trampoline" "run" "-m" "figwheel.main" "-b" "dev" "-r"]
