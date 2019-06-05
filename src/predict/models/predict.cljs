@@ -405,6 +405,10 @@
     {:benefits2-1     benefits2-1
      :annual-benefits (map-of-vs->v-of-maps benefits2-1)}))
 
+(defn age5
+  [age time]
+  (+ age delay -1 time))
+
 
 (defn cljs-predict-h10
   "clojure/script implementation of predict-v2 model.
@@ -437,7 +441,7 @@
     :as   inputs}]
 
   (let [age (if (< age 25) 25 age)
-        age5 (fn [age time] (+ age delay -1 time))
+
         detection ([0, 1, 0.204] detection)
         grade ([1, 2, 3, 2.13] (if (= grade 9) 3 (dec grade)))
         grade-a (grade-a grade)
@@ -564,7 +568,7 @@
 
 
         ; Cumulative all cause mortality conditional on surviving breast and all cause mortality
-        ; R 194
+        ; R 318
         m-all-rx (into {}
                        (comp
                          (map (cell-binary #(- 1 (* %1 %2)) s-cum-br-rx))

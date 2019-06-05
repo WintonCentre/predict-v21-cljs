@@ -5,7 +5,7 @@
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.0"]
                  [org.clojure/clojurescript "1.10.520"]
-                 [winton-utils "0.2.0"]]
+                 [winton-utils "0.2.1"]]
   :profiles {:dev    {:dependencies [[com.bhauman/figwheel-main "0.2.0"]
                                      [com.bhauman/rebel-readline-cljs "0.1.4"]]}
              :kaocha {:dependencies [[lambdaisland/kaocha "0.0-418"]
