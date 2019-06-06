@@ -130,7 +130,7 @@
       0)                                                    ;ki67.beta (all other cases)
     0))
 
-(defn types-rx
+(defn types-rx*
   "Calculate treatment coefficients
   radio indicates radiotherapy is available in the interface and selected
   bis indicates bisphosphonates is available in the interface and selected
@@ -202,6 +202,7 @@
      :hrct  hrct :hrct-low hrct-low :hrct-high hrct-high
      :hrctb hrctb :hrctb-low hrctb-low :hrctb-high hrctb-high}))
 
+(def types-rx (memoize types-rx*))
 
 (defn cljs-predict
   "clojure/script implementation of predict-v2 model.
@@ -231,6 +232,8 @@
   [{:keys [age size nodes grade erstat detection her2 ki67 rtime radio? bis? chemoGen horm radio bis tra]
     :as   inputs}]
 
+  ;; Note R reference is
+
   (let [age (if (< age 25) 25 age)
         detection ([0, 1, 0.204] detection)
         grade ([1, 2, 3, 2.13] (if (= grade 9) 3 (dec grade)))
@@ -240,7 +243,7 @@
         chemo (pos? chemoGen)
 
         types-rx (partial types-rx inputs)                  ; Note this is where bis horm radio and ta are used
-        types (map first (types-rx 0))                      ; treatment type keys
+
         pi (prognostic-index {:age       age
                               :size      size
                               :nodes     nodes
@@ -253,8 +256,10 @@
                               :radio?    radio?})
         mi (m-oth-prognostic-index age radio?)              ;ok
         times (range (inc (js/Math.round rtime)))
-
-        _ (println "times " times)
+        types (map first (types-rx 0))                      ; treatment type keys
+        _ (print "times " times)
+        _ (print "types " types)
+        _ (print "(:h (types_rx 0)) " (:h (types-rx 0)))
 
 
         ;------
@@ -300,19 +305,21 @@
         ;------
         ; Generate annual baseline breast mortality
         ; R 161
-        base-m-br (->> times                                ;base.m.br (ok)   R 164
+        base-m-br (->> times                                ;base.m.br (ok)   R 200
                        (map (partial base-m-cum-br erstat))
                        (deltas 0))
 
-        m-br-rx-xf-1 (fn [type] [type (map #(* (exp (+ (type types-rx) pi)) %) base-m-br)])
+        m-br-rx-xf-1 (fn [type time]
+                       [type (map #(* (exp (+ (type (types-rx time)) pi)) %) base-m-br)])
 
         s-cum-br-rx (into {}
                           (comp
-                            (map m-br-rx-xf-1)              ; -> m-br-x       R 171
+                            (map m-br-rx-xf-1)              ; -> m-br-x       R 251
                             (map cell-sums)                 ; -> m-cum-br-rx  R 178
                             (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-br-rx R 181
 
                           types)
+
 
         m-br-rx (into {}
                       (comp

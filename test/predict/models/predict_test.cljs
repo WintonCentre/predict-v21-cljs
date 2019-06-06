@@ -118,7 +118,7 @@
 
     ))
 
-#_(deftest cljs-predict-test
+(deftest cljs-predict-test
     (testing "v2.1 model"
       (is (= '(0
                 0.0014235998353466783
@@ -152,7 +152,7 @@
                                       :bis       1
                                       :radio?    false
                                       :radio     0
-                                      :horm      :yes
+                                      :horm      :h5
                                       :tra       1
                                       }))))))
     )
