@@ -1,0 +1,26 @@
+{
+  "name": "predict-v21-cljs",
+  "version": "1.0.0",
+  "description": "node package needed to run kaocha node back end",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WintonCentre/predict-v21-cljs.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/WintonCentre/predict-v21-cljs/issues"
+  },
+  "homepage": "https://github.com/WintonCentre/predict-v21-cljs#readme",
+  "dependencies": {
+    "isomorphic-ws": "^4.0.1",
+    "ws": "^7.0.0"
+  }
+}

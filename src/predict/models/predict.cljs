@@ -5,8 +5,6 @@
             ))
 
 
-
-
 (def exp js/Math.exp)
 (def ln js/Math.log)
 (def pow js/Math.pow)
@@ -50,7 +48,7 @@
   "R: r.oth other mortality coefficient for radiotherapy treatment if enabled"
   (if radio? 0.068 0))
 
-(defn prognostic-index                                      ; (Shiny R 134)
+(defn prognostic-index                                      ; (Shiny R 134)/R 134
   "Calculate the breast cancer mortality prognostic index (pi).
   Comments relate this code to the corresponding R variables."
   [{:keys [age size nodes grade erstat detection her2-rh ki67-rh grade-a radio? bis?]
@@ -83,12 +81,12 @@
         (* 1.129091 grade-a)))))                            ; grade.beta * grade.val (er==0)
 
 
-(defn m-oth-prognostic-index [age radio?]                   ; mi (Shiny R 130)
+(defn m-oth-prognostic-index [age radio?]                   ; mi (Shiny R 130)/R 67
   "Calculate the other mortality prognostic index"
   (+ (* 0.0698252 (+ (pow (/ age 10) 2) -34.23391957)) (r-base-oth radio?)))
 
 (defn base-m-cum-br
-  "baseline survival. Actually baseline-mortality! R: base.m.cum.br"
+  "Generate cumulative baseline breast mortality R 194"
   [erstat tm]
   (if (pos? tm)
     (exp
@@ -269,7 +267,7 @@
         ; Generate cumulative survival non-breast mortality  s.cum.oth R 124
         s-cum-oth (map #(exp (* (- (exp mi)) %)) base-m-cum-oth)
 
-        base-m-oth (deltas 0 base-m-cum-oth)                ;R 127
+        base-m-oth (deltas 0 base-m-cum-oth)                ;R 129
 
         m-cum-oth (mapv (fn [tm] (- 1 (nth s-cum-oth tm))) times) ; m.cum.oth (ok)
 
@@ -308,6 +306,8 @@
         base-m-br (->> times                                ;base.m.br (ok)   R 200
                        (map (partial base-m-cum-br erstat))
                        (deltas 0))
+
+        _ (println "base-m-br" base-m-br)
 
         m-br-rx-xf-1 (fn [type time]
                        [type (map #(* (exp (+ (type (types-rx time)) pi)) %) base-m-br)])

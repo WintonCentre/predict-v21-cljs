@@ -12,4 +12,4 @@ pom.xml.asc
 .idea
 out/
 .rebel_readline_history
-
+.cljs_node_repl/*
