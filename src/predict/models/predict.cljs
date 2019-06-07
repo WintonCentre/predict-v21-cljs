@@ -104,9 +104,9 @@
     0))
 
 
-(defn age [y] (if (< y 25) 25 y))
+(defn valid-age [y] (if (< y 25) 25 y))
 
-(defn detection [d] ([0, 1, 0.204] d))
+(defn detection-coeff [d] ([0, 1, 0.204] d))
 
 (defn grade-a
   [grade]
@@ -202,6 +202,13 @@
 
 (def types-rx (memoize types-rx*))
 
+(defn years [rtime]
+  (range (inc (js/Math.round rtime))))
+
+(defn base-m-cum-oth*
+  [times]
+  (map #(exp (+ -6.052919 (* 1.079863 (ln %)) (* 0.3255321 (pow % 0.5)))) times))
+
 (defn cljs-predict
   "clojure/script implementation of predict-v2 model.
 
@@ -232,8 +239,8 @@
 
   ;; Note R reference is
 
-  (let [age (if (< age 25) 25 age)
-        detection ([0, 1, 0.204] detection)
+  (let [age (valid-age age)
+        detection (detection-coeff detection)
         grade ([1, 2, 3, 2.13] (if (= grade 9) 3 (dec grade)))
         grade-a (grade-a grade)
         her2-rh (her2-rh her2)
@@ -253,7 +260,7 @@
                               :ki67-rh   ki67-rh
                               :radio?    radio?})
         mi (m-oth-prognostic-index age radio?)              ;ok
-        times (range (inc (js/Math.round rtime)))
+        times (years rtime)
         types (map first (types-rx 0))                      ; treatment type keys
         _ (print "times " times)
         _ (print "types " types)
@@ -262,7 +269,7 @@
 
         ;------
         ; Generate cumulative baseline other mortality       base.m.cum.oth R 121
-        base-m-cum-oth (map #(exp (+ -6.052919 (* 1.079863 (ln %)) (* 0.3255321 (pow % 0.5)))) times)
+        base-m-cum-oth (base-m-cum-oth* times)
 
         ; Generate cumulative survival non-breast mortality  s.cum.oth R 124
         s-cum-oth (map #(exp (* (- (exp mi)) %)) base-m-cum-oth)
@@ -306,8 +313,6 @@
         base-m-br (->> times                                ;base.m.br (ok)   R 200
                        (map (partial base-m-cum-br erstat))
                        (deltas 0))
-
-        _ (println "base-m-br" base-m-br)
 
         m-br-rx-xf-1 (fn [type time]
                        [type (map #(* (exp (+ (type (types-rx time)) pi)) %) base-m-br)])

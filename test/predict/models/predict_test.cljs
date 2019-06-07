@@ -1,21 +1,32 @@
 (ns predict.models.predict-test
   (:require [clojure.test :refer [deftest is testing]]
+            [winton-utils.data-frame :refer [cell-apply cell-update cell-binary cell-binary-seq cell-sums cell-diffs map-of-vs->v-of-maps]]
             [predict.models.predict :refer [exp ln pow abs
                                             deltas rec-age-10-sq log-age-10
-                                            r-base-br r-br r-base-oth r-oth detection grade-a her2-rh ki67-rh
+                                            r-base-br r-br r-base-oth r-oth detection-coeff grade-a her2-rh ki67-rh
                                             prognostic-index m-oth-prognostic-index
-                                            base-m-cum-br age
-                                            types-rx
+                                            base-m-cum-br valid-age years
+                                            types-rx base-m-cum-oth*
                                             cljs-predict
                                             ]]))
 
-(def default-epsilon "default float tolerance" 1e-8)
+(def default-epsilon "default float tolerance" 1e-7)
+
+
 
 (defn approx=
   ([a b epsilon]
    (< (abs (- a b)) epsilon))
   ([a b]
    (approx= a b default-epsilon)))
+
+(defn approx=v
+  ([a b epsilon]
+   (if (not= (count a) (count b))
+     false
+     (every? (fn [[a* b*]] (approx= a* b* epsilon)) (map vector a b))))
+  ([a b]
+   (approx=v a b default-epsilon)))
 
 (deftest simple-functions
   (testing "deltas"
@@ -41,10 +52,10 @@
   (is (= [-0.047 0] [(r-base-oth true) (r-base-oth false)]))
   (is (= [-0.198 0] [(r-br true) (r-br false)]))
   (is (= [0.068 0] [(r-oth true) (r-oth false)]))
-  (is (= [0, 1, 0.204] (mapv detection (range 3))))
-  (is (= [0 1 1 0] (mapv grade-a (range 1 5))))
-  (is (= [-0.0762 0.2413] (mapv her2-rh [0 1])))
-  (is (= [-0.11333 0.14904 0 0] (mapv #(apply ki67-rh %1) [[1 0] [1 1] [0 0] [0 1]])))
+  ;(is (= [0, 1, 0.204] (mapv detection-coeff (range 3))))
+  ;(is (= [0 1 1 0] (mapv grade-a (range 1 5))))
+  ;(is (= [-0.0762 0.2413] (mapv her2-rh [0 1])))
+  ;(is (= [-0.11333 0.14904 0 0] (mapv #(apply ki67-rh %1) [[1 0] [1 1] [0 0] [0 1]])))
   )
 
 (deftest prognostic-index-test
@@ -68,8 +79,41 @@
 
 (deftest age-test
   (testing "age-clamp"
-    (is (= 25 (age 16)))
-    (is (= 30 (age 30))))
+    (is (= 25 (valid-age 16)))
+    (is (= 30 (valid-age 30))))
+  )
+
+(deftest detection-test
+  (testing "detection"
+    (is (zero? (detection-coeff 0)))
+    (is (= 1 (detection-coeff 1)))
+    (is (= 0.204 (detection-coeff 2)))))
+
+(deftest grade-a-test
+  (testing "grade-a"
+    (is (= 0 (grade-a 1)))
+    (is (= 1 (grade-a 2)))
+    (is (= 1 (grade-a 3))))
+  )
+
+(deftest her2-rh-test
+  (testing "her2-rh"
+    (is (= 0.2413 (her2-rh 1)))
+    (is (= -0.0762 (her2-rh 0))))
+  )
+
+(deftest ki67-rh-test
+  (testing "ki67-rh"
+    (is (= 0 (ki67-rh 0 10)))
+    (is (= 0.14904 (ki67-rh 1 1)))
+    (is (= -0.11333 (ki67-rh 1 0)))
+    )
+  )
+
+(deftest years-test
+  (testing "years"
+    (is (= [0 1 2 3 4 5 6 7 8 9 10] (years 10)))
+    (is (= [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15] (years 15))))
   )
 
 (deftest types-rx-test
@@ -117,45 +161,159 @@
                      11)) "1 :h10 11")
 
     ))
+;
+;
+; Comparisons with intermediate calculations found in the R environment
+;
+
+(def mi (m-oth-prognostic-index 25 false))
+(def times (years 15))
+
+(def base-m-cum-oth (base-m-cum-oth* times))
+
+(deftest base-m-cum-oth*-test
+  (testing "base-m-cum-oth* R:121"
+    (is (approx=v '(0 0.003255573 0.007875150 0.013531566 0.020144040 0.027680291 0.036128375 0.045487139 0.055761969 0.066962590 0.079101799 0.092194686 0.106258128 0.121310438 0.137371129 0.154460731) base-m-cum-oth)))
+  )
+
+(def s-cum-oth (mapv #(exp (* (- (exp mi)) %)) base-m-cum-oth))
+(deftest s-cum-oth-test
+  (is (approx=v
+        [1 0.9995388 0.9988846 0.9980843 0.9971495 0.9960851 0.9948934 0.9935748 0.9921292 0.9905557 0.9888532 0.9870202 0.9850551 0.9829562 0.9807216 0.9783494]
+        s-cum-oth) "s-cum-oth"))
+
+(def base-m-oth (deltas 0 base-m-cum-oth))
+(deftest base-m-oth-test
+  (is (approx=v
+        [0 0.003255573 0.004619576 0.005656416 0.006612474 0.007536251 0.008448084 0.009358764 0.010274830 0.011200621 0.012139209 0.013092888 0.014063442 0.015052310 0.016060690 0.017089602]
+        base-m-oth) "base-m-oth"))
+
+(def m-cum-oth [0
+                0.00046123617167015407
+                0.001115353579987044
+                0.0019157013210695517
+                0.0028505123043990332
+                0.003914850840574191
+                0.005106616419662813
+                0.006425186276472705
+                0.007870809602329554
+                0.009444291529239424
+                0.011146810094146975
+                0.012979801759237075
+                0.014944885371467098
+                0.017043809091435103
+                0.019278411749743873
+                0.02165059363589017])
+(deftest m-cum-oth-test
+  (is (= m-cum-oth (mapv (fn [tm] (- 1 (nth s-cum-oth tm))) times))))
+
+(def m-oth [0
+            0.00046123617167015407
+            0.0006541174083168899
+            0.0008003477410825077
+            0.0009348109833294815
+            0.0010643385361751578
+            0.0011917655790886217
+            0.0013185698568098925
+            0.0014456233258568485
+            0.0015734819269098699
+            0.0017025185649075514
+            0.0018329916650901001
+            0.001965083612230023
+            0.0020989237199680044
+            0.002234602658308771
+            0.002372181886146296])
+(deftest m-oth-test
+  (is (approx=v m-oth (deltas 0 m-cum-oth))))
 
 (deftest cljs-predict-test
-    (testing "v2.1 model"
-      (is (= '(0
-                0.0014235998353466783
-                0.005289672012324664
-                0.010759822493926374
-                0.017200767587482346
-                0.024213922849740006
-                0.0315433093601687
-                0.0390198769320368
-                0.046529416795973236
-                0.05399349285357215
-                0.06135767218134225
-                0.0685840054034158
-                0.07564607730104955
-                0.08252566579852982
-                0.08921043783391924
-                0.09569233116719345)
+  (testing "v2.1 model"
+    (is (= '(0
+              0.0014235998353466783
+              0.005289672012324664
+              0.010759822493926374
+              0.017200767587482346
+              0.024213922849740006
+              0.0315433093601687
+              0.0390198769320368
+              0.046529416795973236
+              0.05399349285357215
+              0.06135767218134225
+              0.0685840054034158
+              0.07564607730104955
+              0.08252566579852982
+              0.08921043783391924
+              0.09569233116719345)
 
-             (:hrctb (:benefits2-1 (cljs-predict
-                                     {:age       25
-                                      :size      2
-                                      :nodes     2
-                                      :grade     1
-                                      :erstat    1
-                                      :detection 1
-                                      :her2      1
-                                      :ki67      1
-                                      :rtime     15
-                                      :chemoGen  3
-                                      :bis?      true
-                                      :bis       1
-                                      :radio?    false
-                                      :radio     0
-                                      :horm      :h5
-                                      :tra       1
-                                      }))))))
-    )
+           (:hrctb (:benefits2-1 (cljs-predict
+                                   {:age       25
+                                    :size      2
+                                    :nodes     2
+                                    :grade     1
+                                    :erstat    1
+                                    :detection 1
+                                    :her2      1
+                                    :ki67      1
+                                    :rtime     15
+                                    :chemoGen  3
+                                    :bis?      true
+                                    :bis       1
+                                    :radio?    false
+                                    :radio     0
+                                    :horm      :h5
+                                    :tra       1
+                                    }))))))
+  )
+
+(def radio? false)
+(def types (map first (types-rx 0)))
+(def rx-oth (->> types
+                 (map (fn [type] [type (if (and radio? (some #{"r"} (name type))) r-oth 0)]))
+                 (into {})))
+(deftest rx-oth-test
+  (is (= {:r-low      0,
+          :h-high     0,
+          :r          0,
+          :hr         0,
+          :b-high     0,
+          :hrc-high   0,
+          :hrct       0,
+          :hrctb-high 0,
+          :h-low      0,
+          :hrc-low    0,
+          :c-low      0,
+          :hrct-low   0,
+          :hr-low     0,
+          :hrc        0,
+          :hrctb-low  0,
+          :z          0,
+          :c          0,
+          :hrct-high  0,
+          :hrctb      0,
+          :h          0,
+          :t-high     0,
+          :b          0,
+          :c-high     0,
+          :t          0,
+          :hr-high    0,
+          :b-low      0,
+          :t-low      0,
+          :r-high     0}
+         rx-oth)))
+
+(def xf-m-oth-rx (fn [type]
+                   [type (map (fn [tm]
+                                (* (base-m-oth tm) (exp (+ mi (type rx-oth)))))
+                              times)]))
+(def s-cum-oth-rx (into {}
+                        (comp
+                          (map xf-m-oth-rx)              ; -> m-oth-rx               R 126
+                          (map cell-sums)                ; -> m-cum-oth-rx (state 1) R 140
+                          (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-oth-rx        R 143
+
+                        types))
+(deftest s-cum-oth-rx-test
+  (is (= [[]] s-cum-oth-rx)))
 
 #_(deftest cljs-predict-h5-test
     (testing "h10 model"
@@ -235,3 +393,4 @@
                                       :tra       1
                                       }))))))
     )
+
