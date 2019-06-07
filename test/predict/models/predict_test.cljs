@@ -8,7 +8,8 @@
                                             base-m-cum-br valid-age years
                                             types-rx base-m-cum-oth*
                                             cljs-predict
-                                            ]]))
+                                            ]]
+            [predict.models.s-cum-oth-rx :refer [s-cum-oth-rx*]]))
 
 (def default-epsilon "default float tolerance" 1e-7)
 
@@ -312,8 +313,9 @@
                           (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-oth-rx        R 143
 
                         types))
+
 (deftest s-cum-oth-rx-test
-  (is (= [[]] s-cum-oth-rx)))
+  (is (= s-cum-oth-rx* s-cum-oth-rx)))
 
 #_(deftest cljs-predict-h5-test
     (testing "h10 model"
