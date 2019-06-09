@@ -354,7 +354,8 @@ s.cum.oth.10 <- 1 - m.cum.oth.10
 
 # Generate the time specific treatment coefficients
 h5   <- c(rep(h,rows))
-h10  <- c(rep(h, rows - 5), rep(-.2+h, 5))
+#h10  <- c(rep(h, rows - 5), rep(-.2+h, 5)) #v2.1
+h10  <- c(rep(h, rows - 5), rep(-.342+h, 5)) #Shiny ref
 pi5  <- pi + h5 + r.br + c + t + b
 pi10 <- pi + h10 + r.br + c + t + b
 rx10 <- cbind(pi5, pi10)

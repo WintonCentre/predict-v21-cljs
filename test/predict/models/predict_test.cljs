@@ -9,8 +9,10 @@
                                             types-rx base-m-cum-oth*
                                             cljs-predict
                                             ]]
-            [predict.models.s-cum-oth-rx :refer [s-cum-oth-rx*]]))
+            [predict.models.s-cum-oth-rx :refer [s-cum-oth-rx*]]
+            [predict.models.s-cum-br-rx :refer [s-cum-br-rx*]]))
 
+(enable-console-print!)
 (def default-epsilon "default float tolerance" 1e-7)
 
 
@@ -117,56 +119,58 @@
     (is (= [0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15] (years 15))))
   )
 
+(def types-rx-expected-shiny   {:r-low 0,
+                                :h-high -0.8440000000000001,
+                                :r 0,
+                                :hr -0.7277,
+                                :b-high -0.32,
+                                :hrc-high -1.3067,
+                                :hrct -1.5304,
+                                :hrctb-high -1.8504,
+                                :h-low -0.554,
+                                :hrc-low -1.0407,
+                                :c-low -0.313,
+                                :hrct-low -1.4127,
+                                :hr-low -0.7277,
+                                :hrc -1.1737,
+                                :hrctb-low -1.6004,
+                                :z 0,
+                                :c -0.446,
+                                :hrct-high -1.7067,
+                                :hrctb -1.7284,
+                                :h -0.7277,
+                                :t-high -0.533,
+                                :b -0.198,
+                                :c-high -0.579,
+                                :t -0.3567,
+                                :hr-high -0.7277,
+                                :b-low -0.07,
+                                :t-low -0.239,
+                                :r-high 0})
+
+
 (deftest types-rx-test
   (testing "types-rx"
-    (is (= {:r-low      0,
-            :h-high     0,
-            :r          0,
-            :hr         0,
-            :b-high     0,
-            :hrc-high   -0.579,
-            :hrct       -0.446,
-            :hrctb-high -0.446,
-            :h-low      0,
-            :hrc-low    -0.313,
-            :c-low      -0.313,
-            :hrct-low   -0.446,
-            :hr-low     0,
-            :hrc        -0.446,
-            :hrctb-low  -0.446,
-            :z          0,
-            :c          -0.446,
-            :hrct-high  -0.446,
-            :hrctb      -0.446,
-            :h          0,
-            :t-high     0,
-            :b          0,
-            :c-high     -0.579,
-            :t          0,
-            :hr-high    0,
-            :b-low      0,
-            :t-low      0,
-            :r-high     0}
-           (types-rx {:erstat 0 :her2 0 :horm :h5 :chemoGen 3 :radio? false :bis? false :bis 1 :tra 1} 0)) "0 :h5 0")
+    (is (= {:r-low 0, :h-high 0, :r 0, :hr 0, :b-high 0, :hrc-high -0.579, :hrct -0.446, :hrctb-high -0.446, :h-low 0, :hrc-low -0.313, :c-low -0.313, :hrct-low -0.446, :hr-low 0, :hrc -0.446, :hrctb-low -0.446, :z 0, :c -0.446, :hrct-high -0.446, :hrctb -0.446, :h 0, :t-high 0, :b 0, :c-high -0.579, :t 0, :hr-high 0, :b-low 0, :t-low 0, :r-high 0}
+          (types-rx {:erstat 0 :her2 0 :horm :h5 :chemoGen 3 :radio? false :bis? false :bis 1 :tra 1} 0)) "0 :h5 0")
 
     (is (= {:r-low 0, :h-high -0.502, :r 0, :hr -0.3857, :b-high -0.32, :hrc-high -0.9646999999999999, :hrct -1.1884000000000001, :hrctb-high -1.5084000000000002, :h-low -0.212, :hrc-low -0.6987, :c-low -0.313, :hrct-low -1.0707, :hr-low -0.3857, :hrc -0.8317, :hrctb-low -1.2584000000000002, :z 0, :c -0.446, :hrct-high -1.3647, :hrctb -1.3864, :h -0.3857, :t-high -0.533, :b -0.198, :c-high -0.579, :t -0.3567, :hr-high -0.3857, :b-low -0.07, :t-low -0.239, :r-high 0}
-           (types-rx {:erstat 1 :her2 1 :horm :h5 :chemoGen 3 :radio? false :bis? true :bis 1 :tra 0}
-                     0)) "1 :h5 0")
+          (types-rx {:erstat 1 :her2 1 :horm :h5 :chemoGen 3 :radio? false :bis? true :bis 1 :tra 0}
+            0)) "1 :h5 0")
 
     (is (= {:r-low 0, :h-high -0.502, :r 0, :hr -0.3857, :b-high -0.32, :hrc-high -0.9646999999999999, :hrct -1.1884000000000001, :hrctb-high -1.5084000000000002, :h-low -0.212, :hrc-low -0.6987, :c-low -0.313, :hrct-low -1.0707, :hr-low -0.3857, :hrc -0.8317, :hrctb-low -1.2584000000000002, :z 0, :c -0.446, :hrct-high -1.3647, :hrctb -1.3864, :h -0.3857, :t-high -0.533, :b -0.198, :c-high -0.579, :t -0.3567, :hr-high -0.3857, :b-low -0.07, :t-low -0.239, :r-high 0}
-           (types-rx {:erstat 1 :her2 1 :horm :h5 :chemoGen 3 :radio? false :bis? true :bis 1 :tra 0}
-                     11)) "1 :h5 11")
+          (types-rx {:erstat 1 :her2 1 :horm :h5 :chemoGen 3 :radio? false :bis? true :bis 1 :tra 0}
+            11)) "1 :h5 11")
 
-    (is (= {:r-low 0, :h-high -0.702, :r 0, :hr -0.5857, :b-high -0.32, :hrc-high -1.1646999999999998, :hrct -1.3884, :hrctb-high -1.7084000000000001, :h-low -0.41200000000000003, :hrc-low -0.8987, :c-low -0.313, :hrct-low -1.2707000000000002, :hr-low -0.5857, :hrc -1.0317, :hrctb-low -1.4584000000000001, :z 0, :c -0.446, :hrct-high -1.5647000000000002, :hrctb -1.5864, :h -0.5857, :t-high -0.533, :b -0.198, :c-high -0.579, :t -0.3567, :hr-high -0.5857, :b-low -0.07, :t-low -0.239, :r-high 0}
-           (types-rx {:erstat 1 :her2 1 :horm :h10 :chemoGen 3 :radio? false :bis? true :bis 1 :tra 0}
-                     11)) "1 :h10 11")
-
+    (is (= {:r-low 0, :h-high -0.8440000000000001, :r 0, :hr -0.7277, :b-high -0.32, :hrc-high -1.3067, :hrct -1.5304, :hrctb-high -1.8504, :h-low -0.554, :hrc-low -1.0407, :c-low -0.313, :hrct-low -1.4127, :hr-low -0.7277, :hrc -1.1737, :hrctb-low -1.6004, :z 0, :c -0.446, :hrct-high -1.7067, :hrctb -1.7284, :h -0.7277, :t-high -0.533, :b -0.198, :c-high -0.579, :t -0.3567, :hr-high -0.7277, :b-low -0.07, :t-low -0.239, :r-high 0}
+          (types-rx {:erstat 1 :her2 1 :horm :h10 :chemoGen 3 :radio? false :bis? true :bis 1 :tra 1}
+            15)) "1 :h10 15")
     ))
 ;
 ;
 ; Comparisons with intermediate calculations found in the R environment
 ;
-
+(def pi (prognostic-index {:age 25 :size 1 :nodes 1 :grade 1 :detection 1 :her2_rh 1 :ki67_rh 1 :erstat 1 :radio? false}))
 (def mi (m-oth-prognostic-index 25 false))
 (def times (years 15))
 
@@ -246,31 +250,31 @@
               0.08921043783391924
               0.09569233116719345)
 
-           (:hrctb (:benefits2-1 (cljs-predict
-                                   {:age       25
-                                    :size      2
-                                    :nodes     2
-                                    :grade     1
-                                    :erstat    1
-                                    :detection 1
-                                    :her2      1
-                                    :ki67      1
-                                    :rtime     15
-                                    :chemoGen  3
-                                    :bis?      true
-                                    :bis       1
-                                    :radio?    false
-                                    :radio     0
-                                    :horm      :h5
-                                    :tra       1
-                                    }))))))
+          (:hrctb (:benefits2-1 (cljs-predict
+                                  {:age       25
+                                   :size      2
+                                   :nodes     2
+                                   :grade     1
+                                   :erstat    1
+                                   :detection 1
+                                   :her2      1
+                                   :ki67      1
+                                   :rtime     15
+                                   :chemoGen  3
+                                   :bis?      true
+                                   :bis       1
+                                   :radio?    false
+                                   :radio     0
+                                   :horm      :h5
+                                   :tra       1
+                                   }))))))
   )
 
 (def radio? false)
 (def types (map first (types-rx 0)))
 (def rx-oth (->> types
-                 (map (fn [type] [type (if (and radio? (some #{"r"} (name type))) r-oth 0)]))
-                 (into {})))
+              (map (fn [type] [type (if (and radio? (some #{"r"} (name type))) r-oth 0)]))
+              (into {})))
 (deftest rx-oth-test
   (is (= {:r-low      0,
           :h-high     0,
@@ -300,22 +304,54 @@
           :b-low      0,
           :t-low      0,
           :r-high     0}
-         rx-oth)))
+        rx-oth)))
 
 (def xf-m-oth-rx (fn [type]
                    [type (map (fn [tm]
                                 (* (base-m-oth tm) (exp (+ mi (type rx-oth)))))
-                              times)]))
+                           times)]))
 (def s-cum-oth-rx (into {}
-                        (comp
-                          (map xf-m-oth-rx)              ; -> m-oth-rx               R 126
-                          (map cell-sums)                ; -> m-cum-oth-rx (state 1) R 140
-                          (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-oth-rx        R 143
+                    (comp
+                      (map xf-m-oth-rx)                     ; -> m-oth-rx               R 126
+                      (map cell-sums)                       ; -> m-cum-oth-rx (state 1) R 140
+                      (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-oth-rx        R 143
 
-                        types))
+                    types))
+
+(def erstat 1)
+
+(def base-m-br
+  (->> times                                                ;base.m.br (ok)   R 200, S
+    (map (partial base-m-cum-br erstat))
+    (deltas 0)))
+
+
+
+(defn m-br-rx-xf-1
+  [time]
+  (fn [type]
+    [type (map #(* (exp (+ (type (types-rx time))
+                          pi)) %) base-m-br)]))
+
+(defn s-cum-br-rx
+  [time]
+  (into {}
+    (comp
+      (map (m-br-rx-xf-1 time))                                  ; -> m-br-x       R 251
+      (map cell-sums)                                       ; -> m-cum-br-rx  R 178
+      (map (cell-apply #(->> % (-) (exp)))))                ; -> s-cum-br-rx R 181
+    types))
 
 (deftest s-cum-oth-rx-test
-  (is (= s-cum-oth-rx* s-cum-oth-rx)))
+  (prn "base-m-br" base-m-br)
+  (is true)
+  ;(is (= s-cum-oth-rx* s-cum-oth-rx))
+  )
+
+(deftest s-cum-br-rx-test
+  (is true)
+  ;(is (= s-cum-br-rx* s-cum-br-rx))
+  )
 
 #_(deftest cljs-predict-h5-test
     (testing "h10 model"
@@ -336,24 +372,24 @@
                 0.08921043783391924
                 0.09569233116719345)
 
-             (:hrctb (:benefits2-1 (cljs-predict
-                                     {:age       25
-                                      :size      2
-                                      :nodes     2
-                                      :grade     1
-                                      :erstat    1
-                                      :detection 1
-                                      :her2      1
-                                      :ki67      1
-                                      :rtime     15
-                                      :chemoGen  3
-                                      :bis?      true
-                                      :bis       1
-                                      :radio?    false
-                                      :radio     0
-                                      :horm      :h5
-                                      :tra       1
-                                      }))))))
+            (:hrctb (:benefits2-1 (cljs-predict
+                                    {:age       25
+                                     :size      2
+                                     :nodes     2
+                                     :grade     1
+                                     :erstat    1
+                                     :detection 1
+                                     :her2      1
+                                     :ki67      1
+                                     :rtime     15
+                                     :chemoGen  3
+                                     :bis?      true
+                                     :bis       1
+                                     :radio?    false
+                                     :radio     0
+                                     :horm      :h5
+                                     :tra       1
+                                     }))))))
     )
 
 
@@ -376,23 +412,23 @@
                 0.08921043783391924
                 0.09569233116719345)
 
-             (:hrctb (:benefits2-1 (cljs-predict
-                                     {:age       25
-                                      :size      2
-                                      :nodes     2
-                                      :grade     1
-                                      :erstat    1
-                                      :detection 1
-                                      :her2      1
-                                      :ki67      1
-                                      :rtime     15
-                                      :chemoGen  3
-                                      :bis?      true
-                                      :bis       1
-                                      :radio?    false
-                                      :radio     0
-                                      :horm      true
-                                      :tra       1
-                                      }))))))
+            (:hrctb (:benefits2-1 (cljs-predict
+                                    {:age       25
+                                     :size      2
+                                     :nodes     2
+                                     :grade     1
+                                     :erstat    1
+                                     :detection 1
+                                     :her2      1
+                                     :ki67      1
+                                     :rtime     15
+                                     :chemoGen  3
+                                     :bis?      true
+                                     :bis       1
+                                     :radio?    false
+                                     :radio     0
+                                     :horm      true
+                                     :tra       1
+                                     }))))))
     )
 

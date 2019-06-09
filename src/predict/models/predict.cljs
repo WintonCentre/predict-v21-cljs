@@ -4,7 +4,7 @@
             [winton-utils.data-frame :refer [cell-apply cell-update cell-binary cell-binary-seq cell-sums cell-diffs map-of-vs->v-of-maps]]
             ))
 
-
+(enable-console-print!)
 (def exp js/Math.exp)
 (def ln js/Math.log)
 (def pow js/Math.pow)
@@ -62,15 +62,15 @@
       (+
         (* 34.53642 (+ (rec-age-10-sq age) -0.0287449295))  ; age.beta.1 * age.mfp.1 (er==1) (ok)
         (* -34.20342                                        ; age.beta.2 (er==1) (ok)
-           (+ (* (rec-age-10-sq age)                        ; * age.mfp.2 (er==1) (ok)
-                 (log-age-10 age))
-              -0.0510121013))
+          (+ (* (rec-age-10-sq age)                         ; * age.mfp.2 (er==1) (ok)
+               (log-age-10 age))
+            -0.0510121013))
         (* 0.7530729                                        ; size.beta (er==1) (ok)
-           (+ (ln (/ size 100))                             ; * size.mfp (er==1) (ok)
-              1.545233938))
+          (+ (ln (/ size 100))                              ; * size.mfp (er==1) (ok)
+            1.545233938))
         (* 0.7060723                                        ; nodes.beta (er==1) (ok)
-           (+ (ln (/ (inc nodes) 10))                       ; * nodes.mfp (er==1) (ok)
-              1.387566896))
+          (+ (ln (/ (inc nodes) 10))                        ; * nodes.mfp (er==1) (ok)
+            1.387566896))
         (* 0.746655 grade)                                  ; grade.beta (er==1) (ok)
         (* -0.22763366 detection))                          ; screen.beta (er==1) (ok)
 
@@ -92,14 +92,14 @@
     (exp
       (if (pos? erstat)
         (+ 0.7424402
-           (* -7.527762
-              (pow (/ 1.0 tm) 0.5))
-           (* -1.812513
-              (pow (/ 1.0 tm) 0.5)
-              (ln tm)))
+          (* -7.527762
+            (pow (/ 1.0 tm) 0.5))
+          (* -1.812513
+            (pow (/ 1.0 tm) 0.5)
+            (ln tm)))
         (+ -1.156036
-           (/ 0.4707332 (pow tm 2))
-           (/ -3.51355 tm))))
+          (/ 0.4707332 (pow tm 2))
+          (/ -3.51355 tm))))
 
     0))
 
@@ -141,7 +141,8 @@
   "
   [{:keys [erstat her2 horm chemoGen radio? radio bis? bis tra]} time]
 
-  (let [z-vec [0 0 0]
+  (let [h-plus -0.342                                       ;-0.2                                         ;-0.342
+        z-vec [0 0 0]
 
         c-vec (condp = chemoGen
                 2 [-0.360 -0.248 -0.136]
@@ -155,9 +156,9 @@
                  z-vec)
 
         h-vec (if (and (pos? erstat)
-                       (> time 10)
-                       (= :h10 horm))
-                (map #(- % 0.2) h-vec*)
+                    (> time 10)
+                    (= :h10 horm))
+                (map #(+ % h-plus) h-vec*)
                 h-vec*)
         [h-high h h-low] h-vec
 
@@ -284,137 +285,135 @@
         r-oth (r-oth radio?)
 
         rx-oth (->> types
-                    (map (fn [type] [type (if (and radio? (some #{"r"} (name type))) r-oth 0)]))
-                    (into {}))
+                 (map (fn [type] [type (if (and radio? (some #{"r"} (name type))) r-oth 0)]))
+                 (into {}))
 
         xf-m-oth-rx (fn [type]
                       [type (map (fn [tm]
                                    (* (base-m-oth tm) (exp (+ mi (type rx-oth)))))
-                                 times)])
+                              times)])
 
         s-cum-oth-rx (into {}
-                           (comp
-                             (map xf-m-oth-rx)              ; -> m-oth-rx               R 126
-                             (map cell-sums)                ; -> m-cum-oth-rx (state 1) R 140
-                             (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-oth-rx        R 143
+                       (comp
+                         (map xf-m-oth-rx)                  ; -> m-oth-rx
+                         (map cell-sums)                    ; -> m-cum-oth-rx (state 1)
+                         (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-oth-rx        R 171
 
-                           types)
+                       types)
 
 
         #_#_m-oth-rx (into {}
-                           (comp
-                             (map (cell-apply #(- 1 %)))    ; -> m-cum-oth-rx (state 1) R 146
-                             (map (cell-diffs 0)))          ; -> m-oth-rx               R 148
-                           s-cum-oth-rx)
+                       (comp
+                         (map (cell-apply #(- 1 %)))        ; -> m-cum-oth-rx (state 1) R 146
+                         (map (cell-diffs 0)))              ; -> m-oth-rx               R 148
+                       s-cum-oth-rx)
 
         ;------
         ; Generate annual baseline breast mortality
         ; R 161
-        base-m-br (->> times                                ;base.m.br (ok)   R 200
-                       (map (partial base-m-cum-br erstat))
-                       (deltas 0))
+        base-m-br (->> times                                ;base.m.br (ok)   R 200, S
+                    (map (partial base-m-cum-br erstat))
+                    (deltas 0))
 
         m-br-rx-xf-1 (fn [type time]
                        [type (map #(* (exp (+ (type (types-rx time)) pi)) %) base-m-br)])
 
         s-cum-br-rx (into {}
-                          (comp
-                            (map m-br-rx-xf-1)              ; -> m-br-x       R 251
-                            (map cell-sums)                 ; -> m-cum-br-rx  R 178
-                            (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-br-rx R 181
-
-                          types)
-
+                      (comp
+                        (map m-br-rx-xf-1)                  ; -> m-br-x       R 251
+                        (map cell-sums)                     ; -> m-cum-br-rx  R 178
+                        (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-br-rx R 181
+                      types)
 
         m-br-rx (into {}
-                      (comp
-                        (map (cell-apply #(- 1 %)))         ; -> m-cum-br-rx  R 184
-                        (map (cell-diffs 0)))               ; -> m-br-rx      R 187
-                      s-cum-br-rx)
+                  (comp
+                    (map (cell-apply #(- 1 %)))             ; -> m-cum-br-rx  R 184
+                    (map (cell-diffs 0)))                   ; -> m-br-rx      R 187
+                  s-cum-br-rx)
 
         #_(comment
             ; Generate the annual breast cancer specific mortality rate
             ; R 171
             m-br-rx (->> types-rx                           ;m.br.rx (ok - state 1)
-                         (map (fn [[type rx]]
-                                [type (map #(* (exp (+ rx pi)) %) base-m-br)]))
-                         (into {}))
+                      (map (fn [[type rx]]
+                             [type (map #(* (exp (+ rx pi)) %) base-m-br)]))
+                      (into {}))
 
             ; Calculate the cumulative breast cancer mortality rate
             ; R 178
             m-cum-br-rx (->> types                          ;m.cum.br.x (ok - state 1!)
-                             (map (fn [type]
-                                    [type (reductions + (m-br-rx type))]))
-                             (into {}))
+                          (map (fn [type]
+                                 [type (reductions + (m-br-rx type))]))
+                          (into {}))
 
 
 
             ; Calculate the cumulative breast cancer survival
             ; R 181
             s-cum-br-rx (->> types                          ;s.cum.br.rx (~ ok)
-                             (map (fn [type]
-                                    [type (map #(exp (- %)) (m-cum-br-rx type))]))
-                             (into {}))
+                          (map (fn [type]
+                                 [type (map #(exp (- %)) (m-cum-br-rx type))]))
+                          (into {}))
 
             ; Convert cumulative mortality rate into cumulative risk
             ; R 184
             m-cum-br-rx (->> types                          ;m.cum.br.rx (~ ok state 2)
-                             (map (fn [type]
-                                    [type (map #(- 1 %) (s-cum-br-rx type))]))
-                             (into {}))
+                          (map (fn [type]
+                                 [type (map #(- 1 %) (s-cum-br-rx type))]))
+                          (into {}))
 
             ; R 187
             m-br-rx (->> types                              ;m.br.rx (~ ok state 2)
-                         (map (fn [type] [type (deltas 0 (m-cum-br-rx type))]))
-                         (into {})))
+                      (map (fn [type] [type (deltas 0 (m-cum-br-rx type))]))
+                      (into {})))
 
 
         ; Cumulative all cause mortality conditional on surviving breast and all cause mortality
         ; R 194
         m-all-rx (into {}
-                       (comp
-                         (map (cell-binary #(- 1 (* %1 %2)) s-cum-br-rx))
-                         ;(map (cell-update (fn [type tm old] (- 1 (* old (nth (s-cum-br-rx type) tm))))))
-                         (map (cell-diffs 0)))
-                       s-cum-oth-rx)
+                   (comp
+                     (map (cell-binary #(- 1 (* %1 %2)) s-cum-br-rx))
+                     ;(map (cell-update (fn [type tm old] (- 1 (* old (nth (s-cum-br-rx type) tm))))))
+                     (map (cell-diffs 0)))
+                   s-cum-oth-rx)
         ;---------
         ; Proportion of all cause mortality that is breast cancer
 
         pred-m-br-rx (into {}
-                           (comp
-                             ; do not replace the following call with cell-binary without special casing tm == 0
-                             (map (cell-update (fn [type tm old] (if (> tm 0) (/ old (+ old (nth m-oth tm))) 0)))) ; prop-br-rx R 200
-                             (map (cell-binary * m-all-rx))
-                             ;(map (cell-update (fn [type tm old] (* old (nth (type m-all-rx) tm)))))
-                             )
-                           m-br-rx)
+                       (comp
+                         ; do not replace the following call with cell-binary without special casing tm == 0
+                         (map (cell-update (fn [type tm old] (if (> tm 0) (/ old (+ old (nth m-oth tm))) 0)))) ; prop-br-rx R 200
+                         (map (cell-binary * m-all-rx))
+                         ;(map (cell-update (fn [type tm old] (* old (nth (type m-all-rx) tm)))))
+                         )
+                       m-br-rx)
 
         pred-cum-br-rx (into {}
-                             (map cell-sums)                ; pred-cum-br-rx R 202
-                             pred-m-br-rx)
+                         (map cell-sums)                    ; pred-cum-br-rx R 202
+                         pred-m-br-rx)
 
         #_#_pred-cum-oth-rx (into {}
-                                  (comp
-                                    (map (cell-update (fn [type tm old] (- old (nth (type pred-m-br-rx) tm)))))
-                                    (map cell-sums))
-                                  m-all-rx)
+                              (comp
+                                (map (cell-update (fn [type tm old] (- old (nth (type pred-m-br-rx) tm)))))
+                                (map cell-sums))
+                              m-all-rx)
 
         pred-cum-all-rx (into {}
-                              (comp
-                                (map (cell-binary #(- %2 %1) pred-m-br-rx)) ;pred-m-oth-rx R 203
-                                ;(map (cell-update (fn [type tm old] (- old (nth (type pred-m-br-rx) tm))))) ;pred-m-oth-rx R 203
-                                (map cell-sums)             ; pred-cum-oth-rx R204
-                                (map (cell-binary + pred-cum-br-rx))
-                                ;(map (cell-update (fn [type tm old] (+ old (nth (type pred-cum-br-rx) tm)))))
-                                )                           ; pred-cum-all-rx R 205
-                              m-all-rx)
+                          (comp
+                            (map (cell-binary #(- %2 %1) pred-m-br-rx)) ;pred-m-oth-rx R 203
+                            ;(map (cell-update (fn [type tm old] (- old (nth (type pred-m-br-rx) tm))))) ;pred-m-oth-rx R 203
+                            (map cell-sums)                 ; pred-cum-oth-rx R204
+                            (map (cell-binary + pred-cum-br-rx))
+                            ;(map (cell-update (fn [type tm old] (+ old (nth (type pred-cum-br-rx) tm)))))
+                            )                               ; pred-cum-all-rx R 205
+                          m-all-rx)
 
         surg-only (map #(- 1 %) (:z pred-cum-all-rx))
 
         benefits2-1 (assoc (into {}
-                                 (map (cell-binary-seq - (:z pred-cum-all-rx)))
-                                 ;(map (cell-update (fn [type tm old] (- (nth (:z pred-cum-all-rx) tm) old))))
-                                 pred-cum-all-rx)
+                             (map (cell-binary-seq - (:z pred-cum-all-rx)))
+                             ;(map (cell-update (fn [type tm old] (- (nth (:z pred-cum-all-rx) tm) old))))
+                             pred-cum-all-rx)
                       :z surg-only
                       :oth (:z s-cum-oth-rx))
         ]
