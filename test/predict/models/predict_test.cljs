@@ -169,7 +169,7 @@
 ;
 ; Comparisons with intermediate calculations found in the R environment
 ;
-(def pi (prognostic-index {:age 25 :size 1 :nodes 1 :grade 1 :detection 1 :her2_rh 1 :ki67_rh 1 :erstat 1 :radio? false}))
+(def pi (prognostic-index {:age 25 :size 2 :nodes 2 :grade 1 :detection 1 :her2_rh 1 :ki67_rh 1 :erstat 1 :radio? false}))
 (def mi (m-oth-prognostic-index 25 false))
 (def times (years 15))
 
@@ -340,11 +340,27 @@
     (is (approx=v [0 0.001130244 0.003085806 0.004406595 0.005250795 0.005796647 0.006150640 0.006376906 0.006515610 0.006592877 0.006626260 0.006627880 0.006606300 0.006567684 0.006516544 0.006456227]
            base-m-br))))
 
-(defn m-br-rx-xf-1
-  [type time]
-  [type (map #(* (exp (+ (type (types-rx-curry time)) pi)) %) base-m-br)])
+(def m-br-rx-xf-1
+  (fn [type]
+    [type (map-indexed #(* (exp (+ (type (types-rx-curry %1)) pi)) %2) base-m-br)]))
 
-(defn s-cum-br-rx
+(def m-br-rx
+  (into {}
+    (comp
+      (map m-br-rx-xf-1)                      ; -> m-br-rx       R 251
+      ;(map cell-sums)                                   ; -> m-cum-br-rx  R 178
+      ;(map (cell-apply #(->> % (-) (exp))))
+      )                                                 ; -> s-cum-br-rx R 181
+    types))
+
+(deftest m-br-rx-test
+  (testing "m-br-rx with h10"
+    (is (= nil (:hrctb m-br-rx)))
+    )
+  )
+
+
+#_(defn s-cum-br-rx
   [time]
   (into {}
         (comp
@@ -354,7 +370,7 @@
           )                                                 ; -> s-cum-br-rx R 181
         types))
 
-(deftest s-cum-oth-rx-test
+#_(deftest s-cum-oth-rx-test
   (testing "s-cum-oth-rx-test with h10"
     (is (= s-cum-oth-rx* s-cum-oth-rx))
     )
@@ -363,10 +379,10 @@
 ;
 ;
 ;
-(deftest s-cum-br-rx-test
-  (println "s-cum-br-rx" (:hrctb (s-cum-br-rx 15)))
+#_(deftest s-cum-br-rx-test
+  (println "s-cum-br-rx" (:hrctb (s-cum-br-rx 1)))
   (is (= '(1 0.9995256928331251 0.9982318788589559 0.9963871882816384 0.9941935491496705 0.9917774759750102 0.9892202767460574 0.9865759663973451 0.9838814403907922 0.9811624513646792 0.9784372658181333 0.975718985914931 0.9730170718440085 0.9703383678669492 0.9676878103835882 0.965068926602595)
-         (:hrctb (s-cum-br-rx 15))))
+         (:hrctb (s-cum-br-rx 1))))
   )
 
 #_(deftest cljs-predict-h5-test

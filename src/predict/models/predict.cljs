@@ -201,7 +201,8 @@
      :hrct  hrct :hrct-low hrct-low :hrct-high hrct-high
      :hrctb hrctb :hrctb-low hrctb-low :hrctb-high hrctb-high}))
 
-(def types-rx (memoize types-rx*))
+(def types-rx types-rx*                                     ;(memoize types-rx*)
+  )
 
 (defn years [rtime]
   (range (inc (js/Math.round rtime))))
