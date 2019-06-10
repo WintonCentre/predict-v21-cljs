@@ -277,6 +277,11 @@
 
 
 (def types (map first (types-rx-curry 0)))
+
+(deftest types-test
+  (is (= '(:r-low :h-high :r :hr :b-high :hrc-high :hrct :hrctb-high :h-low :hrc-low :c-low :hrct-low :hr-low :hrc :hrctb-low :z :c :hrct-high :hrctb :h :t-high :b :c-high :t :hr-high :b-low :t-low :r-high)
+         types)))
+
 (def rx-oth (->> types
                  (map (fn [type] [type (if (and radio? (some #{"r"} (name type))) r-oth 0)]))
                  (into {})))
@@ -330,6 +335,10 @@
        (map (partial base-m-cum-br erstat))
        (deltas 0)))
 
+(deftest base-m-br-test
+  (testing "base-m-br"
+    (is (approx=v [0 0.001130244 0.003085806 0.004406595 0.005250795 0.005796647 0.006150640 0.006376906 0.006515610 0.006592877 0.006626260 0.006627880 0.006606300 0.006567684 0.006516544 0.006456227]
+           base-m-br))))
 
 (defn m-br-rx-xf-1
   [type time]
@@ -339,9 +348,10 @@
   [time]
   (into {}
         (comp
-          (map #(m-br-rx-xf-1 % time))                         ; -> m-br-x       R 251
+          (map #(m-br-rx-xf-1 % time))                      ; -> m-br-x       R 251
           (map cell-sums)                                   ; -> m-cum-br-rx  R 178
-          (map (cell-apply #(->> % (-) (exp)))))            ; -> s-cum-br-rx R 181
+          (map (cell-apply #(->> % (-) (exp))))
+          )                                                 ; -> s-cum-br-rx R 181
         types))
 
 (deftest s-cum-oth-rx-test
@@ -354,9 +364,9 @@
 ;
 ;
 (deftest s-cum-br-rx-test
-  (println "s-cum-br-rx" (:hrctb (s-cum-br-rx 9)))
+  (println "s-cum-br-rx" (:hrctb (s-cum-br-rx 15)))
   (is (= '(1 0.9995256928331251 0.9982318788589559 0.9963871882816384 0.9941935491496705 0.9917774759750102 0.9892202767460574 0.9865759663973451 0.9838814403907922 0.9811624513646792 0.9784372658181333 0.975718985914931 0.9730170718440085 0.9703383678669492 0.9676878103835882 0.965068926602595)
-         (:hrctb (s-cum-br-rx 0))))
+         (:hrctb (s-cum-br-rx 15))))
   )
 
 #_(deftest cljs-predict-h5-test
