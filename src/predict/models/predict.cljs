@@ -248,7 +248,7 @@
         ki67-rh (ki67-rh erstat ki67)
         chemo (pos? chemoGen)
 
-        types-rx (partial types-rx inputs)                  ; Note this is where bis horm radio and ta are used
+        types-rx-curry (partial types-rx inputs)                  ; Note this is where bis horm radio and ta are used
 
         pi (prognostic-index {:age       age
                               :size      size
@@ -262,10 +262,10 @@
                               :radio?    radio?})
         mi (m-oth-prognostic-index age radio?)              ;ok
         times (years rtime)
-        types (map first (types-rx 0))                      ; treatment type keys
-        _ (print "times " times)
-        _ (print "types " types)
-        _ (print "(:h (types_rx 0)) " (:h (types-rx 0)))
+        types (map first (types-rx-curry 0))                      ; treatment type keys
+        ;_ (print "times " times)
+        ;_ (print "types " types)
+        ;_ (print "(:h (types_rx 0)) " (:h (types-rx 0)))
 
 
         ;------
@@ -316,8 +316,10 @@
                     (deltas 0))
 
         m-br-rx-xf-1 (fn [type time]
-                       [type (map #(* (exp (+ (type (types-rx time)) pi)) %) base-m-br)])
+                       [type (map #(* (exp (+ (type (types-rx-curry time)) pi)) %) base-m-br)])
 
+        ; I don't think we need to map over all types.
+        ; Rather, we should be calculating only with the type selected
         s-cum-br-rx (into {}
                       (comp
                         (map m-br-rx-xf-1)                  ; -> m-br-x       R 251
@@ -334,7 +336,7 @@
         #_(comment
             ; Generate the annual breast cancer specific mortality rate
             ; R 171
-            m-br-rx (->> types-rx                           ;m.br.rx (ok - state 1)
+            m-br-rx (->> types-rx-curry                           ;m.br.rx (ok - state 1)
                       (map (fn [[type rx]]
                              [type (map #(* (exp (+ rx pi)) %) base-m-br)]))
                       (into {}))
