@@ -340,25 +340,38 @@
     (is (approx=v [0 0.001130244 0.003085806 0.004406595 0.005250795 0.005796647 0.006150640 0.006376906 0.006515610 0.006592877 0.006626260 0.006627880 0.006606300 0.006567684 0.006516544 0.006456227]
            base-m-br))))
 
+(comment
+  (def m-br-rx-xf-1
+    (fn [type]
+      [type (map-indexed #(* (exp (+ (type (types-rx-curry %1)) pi)) %2) base-m-br)]))
+
+  (def m-br-rx
+    (into {}
+          (comp
+            (map m-br-rx-xf-1)                              ; -> m-br-rx       R 251
+            ;(map cell-sums)                                   ; -> m-cum-br-rx  R 178
+            ;(map (cell-apply #(->> % (-) (exp))))
+            )                                               ; -> s-cum-br-rx R 181
+          types))
+
+  (deftest m-br-rx-test
+    (testing "m-br-rx with h10"
+      (is (= nil (:hrctb m-br-rx)))
+      )
+    ))
+
+
 (def m-br-rx-xf-1
-  (fn [type]
-    [type (map-indexed #(* (exp (+ (type (types-rx-curry %1)) pi)) %2) base-m-br)]))
+  (fn [type] [type (map #(* (exp (+ (type types-rx) pi)) %) base-m-br)]))
 
 (def m-br-rx
   (into {}
-    (comp
-      (map m-br-rx-xf-1)                      ; -> m-br-rx       R 251
-      ;(map cell-sums)                                   ; -> m-cum-br-rx  R 178
-      ;(map (cell-apply #(->> % (-) (exp))))
-      )                                                 ; -> s-cum-br-rx R 181
-    types))
-
-(deftest m-br-rx-test
-  (testing "m-br-rx with h10"
-    (is (= nil (:hrctb m-br-rx)))
-    )
-  )
-
+        (comp
+          (map m-br-rx-xf-1)                                ; -> m-br-x       R 171
+          ;(map cell-sums)                                   ; -> m-cum-br-rx  R 178
+          ;(map (cell-apply #(->> % (-) (exp))))
+          )                                                 ; -> s-cum-br-rx R 181
+        types))
 
 #_(defn s-cum-br-rx
   [time]
