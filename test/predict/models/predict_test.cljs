@@ -340,38 +340,31 @@
     (is (approx=v [0 0.001130244 0.003085806 0.004406595 0.005250795 0.005796647 0.006150640 0.006376906 0.006515610 0.006592877 0.006626260 0.006627880 0.006606300 0.006567684 0.006516544 0.006456227]
            base-m-br))))
 
-(comment
-  (def m-br-rx-xf-1
-    (fn [type]
-      [type (map-indexed #(* (exp (+ (type (types-rx-curry %1)) pi)) %2) base-m-br)]))
-
-  (def m-br-rx
-    (into {}
-          (comp
-            (map m-br-rx-xf-1)                              ; -> m-br-rx       R 251
-            ;(map cell-sums)                                   ; -> m-cum-br-rx  R 178
-            ;(map (cell-apply #(->> % (-) (exp))))
-            )                                               ; -> s-cum-br-rx R 181
-          types))
-
-  (deftest m-br-rx-test
-    (testing "m-br-rx with h10"
-      (is (= nil (:hrctb m-br-rx)))
-      )
-    ))
-
 
 (def m-br-rx-xf-1
-  (fn [type] [type (map #(* (exp (+ (type types-rx) pi)) %) base-m-br)]))
+  (fn [type]
+    [type (map-indexed #(* (exp (+ (type (types-rx-curry %1)) pi)) %2) base-m-br)]))
+
+#_(def m-br-rx-xf-1
+  (fn [type]
+    [type (map-indexed #(* (exp (+ (type {:r-low 0, :h-high -0.502, :r 0, :hr -0.3857, :b-high -0.32, :hrc-high -0.9646999999999999, :hrct -1.1884000000000001, :hrctb-high -1.5084000000000002, :h-low -0.212, :hrc-low -0.6987, :c-low -0.313, :hrct-low -1.0707, :hr-low -0.3857, :hrc -0.8317, :hrctb-low -1.2584000000000002, :z 0, :c -0.446, :hrct-high -1.3647, :hrctb -1.3864, :h -0.3857, :t-high -0.533, :b -0.198, :c-high -0.579, :t -0.3567, :hr-high -0.3857, :b-low -0.07, :t-low -0.239, :r-high 0}) pi)) %2) base-m-br)]))
+
 
 (def m-br-rx
   (into {}
         (comp
-          (map m-br-rx-xf-1)                                ; -> m-br-x       R 171
+          (map m-br-rx-xf-1)                                ; -> m-br-rx       R 251
           ;(map cell-sums)                                   ; -> m-cum-br-rx  R 178
           ;(map (cell-apply #(->> % (-) (exp))))
           )                                                 ; -> s-cum-br-rx R 181
         types))
+
+(deftest m-br-rx-test
+  (testing "m-br-rx with h10"
+    (is (= nil (:h m-br-rx))))
+  )
+
+
 
 #_(defn s-cum-br-rx
   [time]
