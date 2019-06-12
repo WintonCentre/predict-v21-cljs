@@ -82,38 +82,6 @@
         (* 0.6260541 (+ (ln (/ (inc nodes) 10)) 1.086916249)) ; nodes.beta * nodes.mfp (er==0)
         (* 1.129091 grade-a)))))                            ; grade.beta * grade.val (er==0)
 
-#_(defn prognostic-index                                      ; (Shiny R 134)/R 134
-  "Calculate the breast cancer mortality prognostic index (pi).
-  Comments relate this code to the corresponding R variables."
-  [{:keys [age size nodes grade erstat detection her2-rh ki67-rh grade-a radio? bis?]
-    :or   {age 65 size 19 nodes 1 grade 1 erstat 1 detection 0 her2-rh -0.0762 ki67-rh -0.11333 grade-a 0 radio? true bis? true}}]
-
-  (+
-    her2-rh                                                 ; -0.0762 (ok)
-    ki67-rh                                                 ; -0.11333 (ok)
-    (r-base-br radio?)                                      ; adjust baseline for radiotherapy (r.base.br)
-    (if (pos? erstat)
-      (+
-        (* 34.53642 (+ (rec-age-10-sq age) -0.0287449295))  ; age.beta.1 * age.mfp.1 (er==1) (ok)
-        (* -34.20342                                        ; age.beta.2 (er==1) (ok)
-          (+ (* (rec-age-10-sq age)                         ; * age.mfp.2 (er==1) (ok)
-               (log-age-10 age))
-            -0.0510121013))
-        (* 0.7530729                                        ; size.beta (er==1) (ok)
-          (+ (ln (/ size 100))                              ; * size.mfp (er==1) (ok)
-            1.545233938))
-        (* 0.7060723                                        ; nodes.beta (er==1) (ok)
-          (+ (ln (/ (inc nodes) 10))                        ; * nodes.mfp (er==1) (ok)
-            1.387566896))
-        (* 0.746655 grade)                                  ; grade.beta (er==1) (ok)
-        (* -0.22763366 detection))                          ; screen.beta (er==1) (ok)
-
-      (+
-        (* 0.0089827 (- age 56.3254902))                    ; age.beta.1 * age.mfp.1 (er==0)
-        (* 2.093446 (+ (pow (/ size 100) 0.5) -0.5090456276)) ; size.beta * size.mfp (er==0)
-        (* 0.6260541 (+ (ln (/ (inc nodes) 10)) 1.086916249)) ; nodes.beta * nodes.mfp (er==0)
-        (* 1.129091 grade-a)))))                            ; grade.beta * grade.val (er==0)
-
 
 (defn m-oth-prognostic-index [age radio?]                   ; mi (Shiny R 130)/R 67
   "Calculate the other mortality prognostic index"
@@ -430,12 +398,6 @@
         pred-cum-br-rx (into {}
                          (map cell-sums)                    ; pred-cum-br-rx R 202
                          pred-m-br-rx)
-
-        #_#_pred-cum-oth-rx (into {}
-                              (comp
-                                (map (cell-update (fn [type tm old] (- old (nth (type pred-m-br-rx) tm)))))
-                                (map cell-sums))
-                              m-all-rx)
 
         pred-cum-all-rx (into {}
                           (comp
