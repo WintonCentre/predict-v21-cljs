@@ -13,6 +13,34 @@
             [predict.models.s-cum-br-rx :refer [s-cum-br-rx*]]))
 
 
+
+;
+; test case inputs for cljs-predict, matching R configuration is:
+;
+(def inputs (into {}
+                  [
+                   [:bis :yes]
+                   [:age 25]
+                   [:radio nil]
+                   [:bis? true]
+                   [:tra :yes]
+                   [:ki67 1]
+                   [:chemoGen 3]
+                   [:size 2]
+                   [:radio? false]
+                   [:nodes 2]
+                   [:grade 1]
+                   [:erstat 1]
+                   [:rtime 15]
+                   [:her2 1]
+                   [:detection 1]
+                   [:horm :h5]
+                   [:her2-rh (her2-rh 1)]
+                   [:ki67-rh (ki67-rh 1 1)]
+                   ]))
+
+
+
 (def default-epsilon "default float tolerance" 1e-7)
 
 (defn approx=
@@ -60,10 +88,12 @@
   )
 
 (deftest prognostic-index-test
-  (is (approx= 0.5006471230275893 (prognostic-index {})))
-  (is (= -0.5074627543042763 (prognostic-index {:age 25 :size 1 :nodes 1 :grade 1 :detection 0 :her2_rh 0 :ki67_rh 0 :erstat 1 :radio? true})))
-  (is (approx= -0.36397949827304354 (prognostic-index {:age 90 :size 10 :nodes 2 :grade 2 :detection 0 :her2_rh 0 :ki67_rh 0 :erstat 0 :radio? false})))
-  (is (approx= -0.8680964143042763 (prognostic-index {:age 25 :size 1 :nodes 1 :grade 1 :detection 1 :her2_rh 1 :ki67_rh 1 :erstat 1 :radio? false}))))
+  ;(is (approx= 0.5006471230275893 (prognostic-index {})))
+  (is (approx= 0.5200516 (prognostic-index inputs)))
+  ;(is (= -0.5074627543042763 (prognostic-index {:age 25 :size 1 :nodes 1 :grade 1 :grade-a (grade-a 1) :detection 0 :her2_rh 0 :ki67_rh 0 :erstat 1 :radio? true})))
+  ;(is (approx= -0.36397949827304354 (prognostic-index {:age 90 :size 10 :nodes 2 :grade 2 :detection 0 :her2_rh 0 :ki67_rh 0 :erstat 0 :radio? false})))
+  ;(is (approx= -0.8680964143042763 (prognostic-index {:age 25 :size 1 :nodes 1 :grade 1 :detection 1 :her2_rh 1 :ki67_rh 1 :erstat 1 :radio? false})))
+  )
 
 (deftest m-oth-prognostic-index-test
   (is (approx= 0.5597244192408362 (m-oth-prognostic-index 65 false)))
@@ -169,7 +199,9 @@
 ;
 ; Comparisons with intermediate calculations found in the R environment
 ;
-(def pi (prognostic-index {:age 25 :size 2 :nodes 2 :grade 1 :detection 1 :her2_rh 1 :ki67_rh 1 :erstat 1 :radio? false}))
+(def pi (prognostic-index {:age     25 :size 2 :nodes 2 :grade 1 :detection 1 :her2_rh 1 :ki67_rh 1 :erstat 1 :radio? false
+                           :her2-rh (her2-rh 1)
+                           :ki67-rh (ki67-rh 1 1)}))
 (def mi (m-oth-prognostic-index 25 false))
 (def times (years 15))
 
@@ -361,12 +393,12 @@
 
 (deftest m-br-rx-test
   (testing "m-br-rx with h10"
-    (is (= nil (:h m-br-rx))))
+    (is (= nil (:hrcbt m-br-rx))))
   )
 
 
 
-#_(defn s-cum-br-rx
+(defn s-cum-br-rx
   [time]
   (into {}
         (comp
@@ -376,7 +408,7 @@
           )                                                 ; -> s-cum-br-rx R 181
         types))
 
-#_(deftest s-cum-oth-rx-test
+(deftest s-cum-oth-rx-test
   (testing "s-cum-oth-rx-test with h10"
     (is (= s-cum-oth-rx* s-cum-oth-rx))
     )
