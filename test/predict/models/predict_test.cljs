@@ -370,43 +370,41 @@
 (deftest base-m-br-test
   (testing "base-m-br"
     (is (approx=v [0 0.001130244 0.003085806 0.004406595 0.005250795 0.005796647 0.006150640 0.006376906 0.006515610 0.006592877 0.006626260 0.006627880 0.006606300 0.006567684 0.006516544 0.006456227]
-           base-m-br))))
+                  base-m-br))))
 
 
 (def m-br-rx-xf-1
   (fn [type]
     [type (map-indexed #(* (exp (+ (type (types-rx-curry %1)) pi)) %2) base-m-br)]))
 
-#_(def m-br-rx-xf-1
-  (fn [type]
-    [type (map-indexed #(* (exp (+ (type {:r-low 0, :h-high -0.502, :r 0, :hr -0.3857, :b-high -0.32, :hrc-high -0.9646999999999999, :hrct -1.1884000000000001, :hrctb-high -1.5084000000000002, :h-low -0.212, :hrc-low -0.6987, :c-low -0.313, :hrct-low -1.0707, :hr-low -0.3857, :hrc -0.8317, :hrctb-low -1.2584000000000002, :z 0, :c -0.446, :hrct-high -1.3647, :hrctb -1.3864, :h -0.3857, :t-high -0.533, :b -0.198, :c-high -0.579, :t -0.3567, :hr-high -0.3857, :b-low -0.07, :t-low -0.239, :r-high 0}) pi)) %2) base-m-br)]))
-
-
 (def m-br-rx
   (into {}
         (comp
           (map m-br-rx-xf-1)                                ; -> m-br-rx       R 251
-          ;(map cell-sums)                                   ; -> m-cum-br-rx  R 178
-          ;(map (cell-apply #(->> % (-) (exp))))
-          )                                                 ; -> s-cum-br-rx R 181
+          )
         types))
 
 (deftest m-br-rx-test
   (testing "m-br-rx with h10"
-    (is (= nil (:hrcbt m-br-rx))))
+    (is (= 0.0027862375961101257
+           (nth (:hrctb m-br-rx) 10)))
+    (is (=  0.001928411632440143
+           (nth (:hrctb m-br-rx) 15))))
   )
 
-
-
-(defn s-cum-br-rx
-  [time]
+(def s-cum-br-rx
   (into {}
         (comp
-          (map #(m-br-rx-xf-1 % time))                      ; -> m-br-x       R 251
+          (map m-br-rx-xf-1)                                ; -> m-br-x       R 251
           (map cell-sums)                                   ; -> m-cum-br-rx  R 178
           (map (cell-apply #(->> % (-) (exp))))
           )                                                 ; -> s-cum-br-rx R 181
         types))
+
+(deftest s-cum-br-rx-test
+  (testing "s-cum-br-rx"
+    (is (=  0.9783999507570005 (nth (:hrctb s-cum-br-rx) 10)))
+    (is (=  0.9688686708023612 (nth (:hrctb s-cum-br-rx) 15)))))
 
 (deftest s-cum-oth-rx-test
   (testing "s-cum-oth-rx-test with h10"
@@ -418,10 +416,10 @@
 ;
 ;
 #_(deftest s-cum-br-rx-test
-  (println "s-cum-br-rx" (:hrctb (s-cum-br-rx 1)))
-  (is (= '(1 0.9995256928331251 0.9982318788589559 0.9963871882816384 0.9941935491496705 0.9917774759750102 0.9892202767460574 0.9865759663973451 0.9838814403907922 0.9811624513646792 0.9784372658181333 0.975718985914931 0.9730170718440085 0.9703383678669492 0.9676878103835882 0.965068926602595)
-         (:hrctb (s-cum-br-rx 1))))
-  )
+    (println "s-cum-br-rx" (:hrctb (s-cum-br-rx 1)))
+    (is (= '(1 0.9995256928331251 0.9982318788589559 0.9963871882816384 0.9941935491496705 0.9917774759750102 0.9892202767460574 0.9865759663973451 0.9838814403907922 0.9811624513646792 0.9784372658181333 0.975718985914931 0.9730170718440085 0.9703383678669492 0.9676878103835882 0.965068926602595)
+           (:hrctb (s-cum-br-rx 1))))
+    )
 
 #_(deftest cljs-predict-h5-test
     (testing "h10 model"
