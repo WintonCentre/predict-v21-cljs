@@ -381,7 +381,7 @@
 (deftest s-cum-br-rx-test
   (testing "s-cum-br-rx"
     (is (= 0.9783999507570005 (nth (:hrctb s-cum-br-rx) 10)))
-    (is (= 0.9688686708023612 (nth (:hrctb s-cum-br-rx) 15)))))
+    (is (= 0.9688686708023612 (nth (:hrctb s-cum-br-rx)` 15)))))
 
 (def m-br-rx
   (into {}
@@ -399,10 +399,10 @@
 
 (def m-all-rx
   (into {}
-    (comp
-      (map (cell-binary #(- 1 (* %1 %2)) s-cum-br-rx))
-      (map (cell-diffs 0)))
-    s-cum-oth-rx))
+        (comp
+          (map (cell-binary #(- 1 (* %1 %2)) s-cum-br-rx))
+          (map (cell-diffs 0)))
+        s-cum-oth-rx))
 
 (deftest m-all-rx-test
   (testing "m-all-rx"
@@ -412,11 +412,11 @@
 
 (def pred-m-br-rx
   (into {}
-    (comp
-      (map (cell-update (fn [type tm old] (if (> tm 0) (/ old (+ old (nth m-oth tm))) 0))))
-      (map (cell-binary * m-all-rx))
-      )
-    m-br-rx))
+        (comp
+          (map (cell-update (fn [type tm old] (if (> tm 0) (/ old (+ old (nth m-oth tm))) 0))))
+          (map (cell-binary * m-all-rx))
+          )
+        m-br-rx))
 
 (deftest pred-m-br-rx-test
   (testing "pred-m-br-rx"
@@ -438,12 +438,12 @@
 
 (def pred-cum-all-rx
   (into {}
-    (comp
-      (map (cell-binary #(- %2 %1) pred-m-br-rx))           ;pred-m-oth-rx R 203
-      (map cell-sums)                                       ; pred-cum-oth-rx R204
-      (map (cell-binary + pred-cum-br-rx))
-      )                                                     ; pred-cum-all-rx R 205
-    m-all-rx))
+        (comp
+          (map (cell-binary #(- %2 %1) pred-m-br-rx))           ;pred-m-oth-rx R 203
+          (map cell-sums)                                       ; pred-cum-oth-rx R204
+          (map (cell-binary + pred-cum-br-rx))
+          )                                                     ; pred-cum-all-rx R 205
+        m-all-rx))
 
 (deftest pred-cum-all-rx-test
   (testing "pred-cum-all-rx"

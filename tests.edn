@@ -11,7 +11,7 @@
               ;:source-paths  ["src"]
               :test-paths    ["test"]
               ;; :cljs/timeout 10000                        ; 10 seconds, the default
-              :cljs/repl-env cljs.repl.browser/repl-env
+              ;:cljs/repl-env cljs.repl.browser/repl-env
               ;;:cljs/compiler-options {:port           9000}
               }]
      #_#_:plugins [:kaocha.plugin/cloverage]                  ; clj only?

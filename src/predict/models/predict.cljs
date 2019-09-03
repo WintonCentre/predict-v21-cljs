@@ -320,8 +320,8 @@
                     (map (partial base-m-cum-br erstat))
                     (deltas 0))
 
-        m-br-rx-xf-1 (fn [type time]
-                       [type (map #(* (exp (+ (type (types-rx-curry time)) pi)) %) base-m-br)])
+        m-br-rx-xf-1   (fn [type]
+                         [type (map-indexed #(* (exp (+ (type (types-rx-curry %1)) pi)) %2) base-m-br)])
 
         ; I don't think we need to map over all types.
         ; Rather, we should be calculating only with the type selected
@@ -378,42 +378,36 @@
         ; Cumulative all cause mortality conditional on surviving breast and all cause mortality
         ; R 194
         m-all-rx (into {}
-                   (comp
-                     (map (cell-binary #(- 1 (* %1 %2)) s-cum-br-rx))
-                     ;(map (cell-update (fn [type tm old] (- 1 (* old (nth (s-cum-br-rx type) tm))))))
-                     (map (cell-diffs 0)))
-                   s-cum-oth-rx)
+                       (comp
+                         (map (cell-binary #(- 1 (* %1 %2)) s-cum-br-rx))
+                         (map (cell-diffs 0)))
+                       s-cum-oth-rx)
         ;---------
         ; Proportion of all cause mortality that is breast cancer
 
         pred-m-br-rx (into {}
-                       (comp
-                         ; do not replace the following call with cell-binary without special casing tm == 0
-                         (map (cell-update (fn [type tm old] (if (> tm 0) (/ old (+ old (nth m-oth tm))) 0)))) ; prop-br-rx R 200
-                         (map (cell-binary * m-all-rx))
-                         ;(map (cell-update (fn [type tm old] (* old (nth (type m-all-rx) tm)))))
-                         )
-                       m-br-rx)
+                           (comp
+                             (map (cell-update (fn [type tm old] (if (> tm 0) (/ old (+ old (nth m-oth tm))) 0))))
+                             (map (cell-binary * m-all-rx))
+                             )
+                           m-br-rx)
 
         pred-cum-br-rx (into {}
-                         (map cell-sums)                    ; pred-cum-br-rx R 202
+                         (map cell-sums)
                          pred-m-br-rx)
 
         pred-cum-all-rx (into {}
-                          (comp
-                            (map (cell-binary #(- %2 %1) pred-m-br-rx)) ;pred-m-oth-rx R 203
-                            ;(map (cell-update (fn [type tm old] (- old (nth (type pred-m-br-rx) tm))))) ;pred-m-oth-rx R 203
-                            (map cell-sums)                 ; pred-cum-oth-rx R204
-                            (map (cell-binary + pred-cum-br-rx))
-                            ;(map (cell-update (fn [type tm old] (+ old (nth (type pred-cum-br-rx) tm)))))
-                            )                               ; pred-cum-all-rx R 205
-                          m-all-rx)
+                              (comp
+                                (map (cell-binary #(- %2 %1) pred-m-br-rx))           ;pred-m-oth-rx R 203
+                                (map cell-sums)                                       ; pred-cum-oth-rx R204
+                                (map (cell-binary + pred-cum-br-rx))
+                                )                                                     ; pred-cum-all-rx R 205
+                              m-all-rx)
 
         surg-only (map #(- 1 %) (:z pred-cum-all-rx))
 
         benefits2-1 (assoc (into {}
                              (map (cell-binary-seq - (:z pred-cum-all-rx)))
-                             ;(map (cell-update (fn [type tm old] (- (nth (:z pred-cum-all-rx) tm) old))))
                              pred-cum-all-rx)
                       :z surg-only
                       :oth (:z s-cum-oth-rx))
@@ -426,7 +420,5 @@
     {:benefits2-1     benefits2-1
      :annual-benefits (map-of-vs->v-of-maps benefits2-1)}))
 
-#_(defn age5
-    [age time]
-    (+ age delay -1 time))
+
 

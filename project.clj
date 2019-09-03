@@ -1,5 +1,5 @@
-(defproject predict-model "2.2.0"
-  :description "Predict model for breast cancer"
+(defproject predict-model "2.2.1"
+  :description "Predict model for breast cancer - including extended hormone"
   :url "https://github.com/WintonCentre/predict-v21-cljs"
   :license {:name "Eclipse Public License"
             :url  "http://www.eclipse.org/legal/epl-v10.html"}
