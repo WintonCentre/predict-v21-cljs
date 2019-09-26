@@ -53,8 +53,8 @@
   Comments relate this code to the corresponding R variables."
   [{:keys [age size nodes grade erstat detection her2-rh ki67-rh grade-a radio? bis?]
     :or   {age 65 size 19 nodes 1 grade 1 erstat 1 detection 0 her2-rh -0.0762 ki67-rh -0.11333 grade-a 0 radio? true bis? true}
-    :as pi-inputs}]
-(println "pi inputs: " pi-inputs)
+    :as   pi-inputs}]
+  #_(println "pi inputs: " pi-inputs)
 
   (+
     her2-rh                                                 ; -0.0762 (ok)
@@ -64,14 +64,14 @@
       (+
         (* 34.53642 (+ (rec-age-10-sq age) -0.0287449295))  ; age.beta.1 * age.mfp.1 (er==1) (ok)
         (* -34.20342                                        ; age.beta.2 (er==1) (ok)
-           (+ (* (rec-age-10-sq age)                        ; * age.mfp.2 (er==1) (ok)
+           (+ (* (rec-age-10-sq age)                         ; * age.mfp.2 (er==1) (ok)
                  (log-age-10 age))
               -0.0510121013))
         (* 0.7530729                                        ; size.beta (er==1) (ok)
-           (+ (ln (/ size 100))                             ; * size.mfp (er==1) (ok)
+           (+ (ln (/ size 100))                              ; * size.mfp (er==1) (ok)
               1.545233938))
         (* 0.7060723                                        ; nodes.beta (er==1) (ok)
-           (+ (ln (/ (inc nodes) 10))                       ; * nodes.mfp (er==1) (ok)
+           (+ (ln (/ (inc nodes) 10))                        ; * nodes.mfp (er==1) (ok)
               1.387566896))
         (* 0.746655 grade)                                  ; grade.beta (er==1) (ok)
         (* -0.22763366 detection))                          ; screen.beta (er==1) (ok)
@@ -94,14 +94,14 @@
     (exp
       (if (pos? erstat)
         (+ 0.7424402
-          (* -7.527762
-            (pow (/ 1.0 tm) 0.5))
-          (* -1.812513
-            (pow (/ 1.0 tm) 0.5)
-            (ln tm)))
+           (* -7.527762
+              (pow (/ 1.0 tm) 0.5))
+           (* -1.812513
+              (pow (/ 1.0 tm) 0.5)
+              (ln tm)))
         (+ -1.156036
-          (/ 0.4707332 (pow tm 2))
-          (/ -3.51355 tm))))
+           (/ 0.4707332 (pow tm 2))
+           (/ -3.51355 tm))))
 
     0))
 
@@ -130,7 +130,7 @@
       0)                                                    ;ki67.beta (all other cases)
     0))
 
-(defn types-rx*
+(defn types-rx
   "Calculate treatment coefficients
   radio indicates radiotherapy is available in the interface and selected
   bis indicates bisphosphonates is available in the interface and selected
@@ -141,7 +141,7 @@
 
   e.g. The treatment combination hcb will be calculated as hrctb, but with r and c coefficients zeroed.
   "
-  [{:keys [erstat her2 horm chemoGen radio? radio bis? bis tra]} time]
+  [{:keys [erstat her2 horm chemoGen radio? radio bis? bis tra delay]} time]
 
   (let [h-plus -0.342                                       ;-0.2                                         ;-0.342
         z-vec [0 0 0]
@@ -158,8 +158,8 @@
                  z-vec)
 
         h-vec (if (and (pos? erstat)
-                    (> time 10)
-                    (= :h10 horm))
+                       (> time (- 10 delay))
+                       (= :h10 horm))
                 (map #(+ % h-plus) h-vec*)
                 h-vec*)
         [h-high h h-low] h-vec
@@ -203,11 +203,9 @@
      :hrct  hrct :hrct-low hrct-low :hrct-high hrct-high
      :hrctb hrctb :hrctb-low hrctb-low :hrctb-high hrctb-high}))
 
-(def types-rx types-rx*                                     ;(memoize types-rx*)
-  )
 
-(defn years [rtime]
-  (range (inc (js/Math.round rtime))))
+(defn years [rtime delay]
+  (range (inc (- (js/Math.round rtime) delay))))
 
 (defn base-m-cum-oth*
   [times]
@@ -238,22 +236,22 @@
   For uncertainties in the coefficients h,c,t etc, see docs/Predictv2-uncertainties.docx
   "
 
-  [{:keys [age size nodes grade erstat detection her2 ki67 rtime radio? bis? chemoGen horm radio bis tra]
+  [{:keys [age size nodes grade erstat detection her2 ki67 rtime radio? bis? chemoGen horm radio bis tra delay]
     :as   inputs}]
 
   ;; Note R reference is
 
-  (println "inputs" )
+  #_(println "inputs")
 
-  (let [age (valid-age age)
+  (let [age (+ (valid-age age) delay)
         detection (detection-coeff detection)
         grade ([1, 2, 3, 2.13] (if (= grade 9) 3 (dec grade)))
         grade-a (grade-a grade)
         her2-rh (her2-rh her2)
         ki67-rh (ki67-rh erstat ki67)
-        chemo (pos? chemoGen)
+        ;chemo (pos? chemoGen)
 
-        types-rx-curry (partial types-rx inputs)                  ; Note this is where bis horm radio and ta are used
+        types-rx-curry (partial types-rx inputs)            ; Note this is where bis horm radio and ta are used
 
         pi (prognostic-index {:age       age
                               :size      size
@@ -266,8 +264,8 @@
                               :ki67-rh   ki67-rh
                               :radio?    radio?})
         mi (m-oth-prognostic-index age radio?)              ;ok
-        times (years rtime)
-        types (map first (types-rx-curry 0))                      ; treatment type keys
+        times (years rtime delay)
+        types (map first (types-rx-curry 0))                ; treatment type keys
         ;_ (print "times " times)
         ;_ (print "types " types)
         ;_ (print "(:h (types_rx 0)) " (:h (types-rx 0)))
@@ -290,89 +288,102 @@
         r-oth (r-oth radio?)
 
         rx-oth (->> types
-                 (map (fn [type] [type (if (and radio? (some #{"r"} (name type))) r-oth 0)]))
-                 (into {}))
+                    (map (fn [type] [type (if (and radio? (some #{"r"} (name type))) r-oth 0)]))
+                    (into {}))
 
         xf-m-oth-rx (fn [type]
                       [type (map (fn [tm]
                                    (* (base-m-oth tm) (exp (+ mi (type rx-oth)))))
-                              times)])
+                                 times)])
 
         s-cum-oth-rx (into {}
-                       (comp
-                         (map xf-m-oth-rx)                  ; -> m-oth-rx
-                         (map cell-sums)                    ; -> m-cum-oth-rx (state 1)
-                         (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-oth-rx        R 171
+                           (comp
+                             (map xf-m-oth-rx)                  ; -> m-oth-rx
+                             (map cell-sums)                    ; -> m-cum-oth-rx (state 1)
+                             (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-oth-rx        R 171
 
-                       types)
+                           types)
 
+        #_(comment
+            ; If we can disentangle the R code here, I think it is simply repeating the original calculation
+            ; but on the last 10 years instead of all 15. There must be a better way to organise this
 
-        #_#_m-oth-rx (into {}
-                       (comp
-                         (map (cell-apply #(- 1 %)))        ; -> m-cum-oth-rx (state 1) R 146
-                         (map (cell-diffs 0)))              ; -> m-oth-rx               R 148
-                       s-cum-oth-rx)
+            ; cf. Shiny 394..402 with Shiny 336..345
+
+            m-oth-10 (into {}
+                           (comp
+                             (map (cell-apply #(- 1 %)))        ; -> m-cum-oth-rx (state 1) R 146; Shiny 243
+                             (map (cell-diffs 0))               ; -> m-oth-rx               R 148; Shiny 248
+                             (map (cell-drop 5)))               ; -> m-oth-10                      Shiny 353
+                           s-cum-oth-rx)
+
+            s-cum-oth-10 (into {}
+                               (comp
+                                 (map (cell-sums))              ; -> m-cum-oth-10                  Shiny 354
+                                 (map (cell-apply #(- 1 %)))    ; -> s-cum-oth-10                  Shiny 355
+                                 )
+                               m-oth-10))
 
         ;------
         ; Generate annual baseline breast mortality
         ; R 161
         base-m-br (->> times                                ;base.m.br (ok)   R 200, S
-                    (map (partial base-m-cum-br erstat))
-                    (deltas 0))
+                       (map (partial base-m-cum-br erstat))
+                       (deltas 0))
 
-        m-br-rx-xf-1   (fn [type]
-                         [type (map-indexed #(* (exp (+ (type (types-rx-curry %1)) pi)) %2) base-m-br)])
+        m-br-rx-xf-1 (fn [type]
+                       [type (map-indexed #(* (exp (+ (type (types-rx-curry %1)) pi)) %2) base-m-br)])
 
         ; I don't think we need to map over all types.
         ; Rather, we should be calculating only with the type selected
         s-cum-br-rx (into {}
-                      (comp
-                        (map m-br-rx-xf-1)                  ; -> m-br-x       R 251
-                        (map cell-sums)                     ; -> m-cum-br-rx  R 178
-                        (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-br-rx R 181
-                      types)
+                          (comp
+                            (map m-br-rx-xf-1)                  ; -> m-br-x       R 251
+                            (map cell-sums)                     ; -> m-cum-br-rx  R 178
+                            (map (cell-apply #(->> % (-) (exp))))) ; -> s-cum-br-rx R 181
+                          types)
 
         m-br-rx (into {}
-                  (comp
-                    (map (cell-apply #(- 1 %)))             ; -> m-cum-br-rx  R 184
-                    (map (cell-diffs 0)))                   ; -> m-br-rx      R 187
-                  s-cum-br-rx)
+                      (comp
+                        (map (cell-apply #(- 1 %)))             ; -> m-cum-br-rx  R 184
+                        (map (cell-diffs 0)))                   ; -> m-br-rx      R 187
+                      s-cum-br-rx)
 
         #_(comment
             ; Generate the annual breast cancer specific mortality rate
             ; R 171
-            m-br-rx (->> types-rx-curry                           ;m.br.rx (ok - state 1)
-                      (map (fn [[type rx]]
-                             [type (map #(* (exp (+ rx pi)) %) base-m-br)]))
-                      (into {}))
+            m-br-rx (->> types-rx-curry                     ;m.br.rx (ok - state 1)
+                         (map (fn [[type rx]]
+                                [type (map #(* (exp (+ rx pi)) %) base-m-br)]))
+                         (into {}))
 
             ; Calculate the cumulative breast cancer mortality rate
             ; R 178
             m-cum-br-rx (->> types                          ;m.cum.br.x (ok - state 1!)
-                          (map (fn [type]
-                                 [type (reductions + (m-br-rx type))]))
-                          (into {}))
+                             (map (fn [type]
+                                    [type (reductions + (m-br-rx type))]))
+                             (into {}))
 
 
 
             ; Calculate the cumulative breast cancer survival
             ; R 181
             s-cum-br-rx (->> types                          ;s.cum.br.rx (~ ok)
-                          (map (fn [type]
-                                 [type (map #(exp (- %)) (m-cum-br-rx type))]))
-                          (into {}))
+                             (map (fn [type]
+                                    [type (map #(exp (- %)) (m-cum-br-rx type))]))
+                             (into {}))
 
             ; Convert cumulative mortality rate into cumulative risk
             ; R 184
             m-cum-br-rx (->> types                          ;m.cum.br.rx (~ ok state 2)
-                          (map (fn [type]
-                                 [type (map #(- 1 %) (s-cum-br-rx type))]))
-                          (into {}))
+                             (map (fn [type]
+                                    [type (map #(- 1 %) (s-cum-br-rx type))]))
+                             (into {}))
 
             ; R 187
             m-br-rx (->> types                              ;m.br.rx (~ ok state 2)
-                      (map (fn [type] [type (deltas 0 (m-cum-br-rx type))]))
-                      (into {})))
+                         (map (fn [type] [type (deltas 0 (m-cum-br-rx type))]))
+                         (into {})))
 
 
         ; Cumulative all cause mortality conditional on surviving breast and all cause mortality
@@ -393,32 +404,42 @@
                            m-br-rx)
 
         pred-cum-br-rx (into {}
-                         (map cell-sums)
-                         pred-m-br-rx)
+                             (map cell-sums)
+                             pred-m-br-rx)
 
         pred-cum-all-rx (into {}
                               (comp
-                                (map (cell-binary #(- %2 %1) pred-m-br-rx))           ;pred-m-oth-rx R 203
-                                (map cell-sums)                                       ; pred-cum-oth-rx R204
+                                (map (cell-binary #(- %2 %1) pred-m-br-rx)) ;pred-m-oth-rx R 203
+                                (map cell-sums)                 ; pred-cum-oth-rx R204
                                 (map (cell-binary + pred-cum-br-rx))
-                                )                                                     ; pred-cum-all-rx R 205
+                                )                               ; pred-cum-all-rx R 205
                               m-all-rx)
 
         surg-only (map #(- 1 %) (:z pred-cum-all-rx))
 
         benefits2-1 (assoc (into {}
-                             (map (cell-binary-seq - (:z pred-cum-all-rx)))
-                             pred-cum-all-rx)
+                                 (map (cell-binary-seq - (:z pred-cum-all-rx)))
+                                 pred-cum-all-rx)
                       :z surg-only
                       :oth (:z s-cum-oth-rx))
+        result (map-of-vs->v-of-maps benefits2-1)
+        survived (if (zero? delay)
+                   nil
+                   (repeat delay (assoc
+                                   (zipmap (keys benefits2-1) (repeat 0))
+                                   :z 1
+                                   :oth 1)))
         ]
 
     ; return
     ;   benefits2-1 - a map of vectors of benefits by year
     ;   annual-benefits a vector by year of benefit maps
 
-    {:benefits2-1     benefits2-1
-     :annual-benefits (map-of-vs->v-of-maps benefits2-1)}))
+    #_{:benefits2-1     benefits2-1
+       :annual-benefits (map-of-vs->v-of-maps benefits2-1)}
+
+    (concat survived result)
+    ))
 
 
 
